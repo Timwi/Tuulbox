@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TagSoup", "..\RT.TagSoup\Sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KitchenSink", "..\RT.Util\Src\RT.KitchenSink.csproj", "{7EDB80B5-CA44-4AD9-BF23-18A9470FEB69}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generex", "..\Generex\Generex.csproj", "{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generex", "..\..\..\Generex\Generex.csproj", "{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

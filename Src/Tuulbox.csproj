@@ -58,7 +58,7 @@
     <Compile Include="Skin.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Generex\Generex.csproj">
+    <ProjectReference Include="..\..\..\Generex\Generex.csproj">
       <Project>{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}</Project>
       <Name>Generex</Name>
     </ProjectReference>
