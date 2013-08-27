@@ -8,21 +8,22 @@ using RT.TagSoup;
 
 namespace Tuulbox.Tools
 {
-    sealed class ListAllTools : ITool
+    sealed class ListAllTools : ITuul
     {
-        string ITool.Name { get { return "List of all tools"; } }
-        string ITool.Url { get { return "/list"; } }
-        string ITool.Keywords { get { return "complete list all tools"; } }
-        string ITool.Description { get { return "Shows a list of all the tools available in the Toolboxx."; } }
-        string ITool.Js { get { return null; } }
-        string ITool.Css { get { return null; } }
+        bool ITuul.Enabled { get { return true; } }
+        string ITuul.Name { get { return "List of all tuuls"; } }
+        string ITuul.Url { get { return "/list"; } }
+        string ITuul.Keywords { get { return "complete list all tuuls"; } }
+        string ITuul.Description { get { return "Shows a list of all the tuuls available in the Tuulbox."; } }
+        string ITuul.Js { get { return null; } }
+        string ITuul.Css { get { return null; } }
 
-        object ITool.Handle(HttpRequest req)
+        object ITuul.Handle(HttpRequest req)
         {
             return new UL(
-                Program.Tools.Where(tool => tool.Name != null).OrderBy(tool => tool.Name).Select(tool => new LI(
-                    new DIV { class_ = "toolname" }._(new A { href = req.Url.WithPathParent().WithPathOnly(tool.Url).ToHref() }._(tool.Name)),
-                    new DIV { class_ = "explain" }._(tool.Description)
+                Program.Tuuls.Where(tuul => tuul != this && tuul.Name != null).OrderBy(tuul => tuul.Name).Select(tuul => new LI(
+                    new DIV { class_ = "tuulname" }._(new A { href = req.Url.WithPathParent().WithPathOnly(tuul.Url).ToHref() }._(tuul.Name)),
+                    new DIV { class_ = "explain" }._(tuul.Description)
                 ))
             );
         }

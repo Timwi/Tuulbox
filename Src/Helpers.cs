@@ -5,13 +5,18 @@ namespace Tuulbox
 {
     static class Helpers
     {
-        public static object LabelWithAccessKey(string line, string accessKey, string forId, string tooltip = null)
+        public static object TextWithAccessKey(string text, string accessKey)
         {
-            object lineHtml = line;
-            var pos = line.IndexOf(accessKey, StringComparison.OrdinalIgnoreCase);
-            if (pos != -1)
-                lineHtml = new object[] { line.Substring(0, pos), new U(line.Substring(pos, accessKey.Length)), line.Substring(pos + accessKey.Length) };
-            return new LABEL { for_ = forId, title = tooltip, accesskey = accessKey }._(lineHtml);
+            object textHtml = text;
+            var pos = text.IndexOf(accessKey, StringComparison.OrdinalIgnoreCase);
+            if (pos == -1)
+                return textHtml;
+            return new object[] { text.Substring(0, pos), new KBD { class_ = "accesskey" }._(text.Substring(pos, accessKey.Length)), text.Substring(pos + accessKey.Length) };
+        }
+
+        public static object LabelWithAccessKey(string text, string accessKey, string forId)
+        {
+            return new LABEL { for_ = forId, accesskey = accessKey }._(TextWithAccessKey(text, accessKey));
         }
     }
 }

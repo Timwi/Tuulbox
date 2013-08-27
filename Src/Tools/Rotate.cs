@@ -16,18 +16,19 @@ namespace Tuulbox.Tools
         TwoSeventy
     }
 
-    sealed class Rotate : ITool
+    sealed class Rotate : ITuul
     {
-        string ITool.Name { get { return "Rotate a picture"; } }
-        string ITool.Url { get { return "/rotate"; } }
-        string ITool.Keywords { get { return "rotate turn flip picture image photo"; } }
-        string ITool.Description { get { return "Rotates a picture you upload."; } }
-        string ITool.Js { get { return null; } }
-        string ITool.Css { get { return null; } }
+        bool ITuul.Enabled { get { return false; } }
+        string ITuul.Name { get { return "Rotate a picture"; } }
+        string ITuul.Url { get { return "/rotate"; } }
+        string ITuul.Keywords { get { return "rotate turn flip picture image photo"; } }
+        string ITuul.Description { get { return "Rotates a picture you upload."; } }
+        string ITuul.Js { get { return null; } }
+        string ITuul.Css { get { return null; } }
 
         static RotateMethod[] _allowed = new[] { RotateMethod.Ninety, RotateMethod.OneEighty, RotateMethod.TwoSeventy };
 
-        object ITool.Handle(HttpRequest req)
+        object ITuul.Handle(HttpRequest req)
         {
             if (req.Method == HttpMethod.Post)
             {

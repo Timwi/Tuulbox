@@ -6,16 +6,17 @@ using RT.Util;
 
 namespace Tuulbox.Tools
 {
-    sealed class Base64 : ITool
+    sealed class Base64 : ITuul
     {
-        string ITool.Name { get { return "Base-64 encoder/decoder"; } }
-        string ITool.Url { get { return "/base64"; } }
-        string ITool.Keywords { get { return "base 64 base64 base-64 encode decode encoder decoder transcoder converter"; } }
-        string ITool.Description { get { return "Converts text you provide to and from base-64."; } }
-        string ITool.Js { get { return null; } }
-        string ITool.Css { get { return null; } }
+        bool ITuul.Enabled { get { return true; } }
+        string ITuul.Name { get { return "Base-64 encoder/decoder"; } }
+        string ITuul.Url { get { return "/base64"; } }
+        string ITuul.Keywords { get { return "base 64 base64 base-64 encode decode encoder decoder transcoder converter"; } }
+        string ITuul.Description { get { return "Converts text you provide to and from base-64."; } }
+        string ITuul.Js { get { return null; } }
+        string ITuul.Css { get { return null; } }
 
-        object ITool.Handle(HttpRequest req)
+        object ITuul.Handle(HttpRequest req)
         {
             string input = null;
             object encoded = null;

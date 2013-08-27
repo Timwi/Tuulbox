@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
+using RT.TagSoup;
 using RT.Util;
 using RT.Util.ExtensionMethods;
-using RT.TagSoup;
+using RT.Util.Json;
 
 namespace Tuulbox.Regexes
 {
@@ -38,6 +36,41 @@ namespace Tuulbox.Regexes
 
     abstract class Node : SourceSpan
     {
+        public static string[] ControlCharactersExplain = Ut.NewArray<string>(
+            "the Null character (NUL, U+0000)",
+            "the Start of Header character (SOH, U+0001)",
+            "the Start of Text character (STX, U+0002)",
+            "the End of Text character (ETX, U+0003)",
+            "the End of Transmission character (EOT, U+0004)",
+            "the Enquiry character (ENQ, U+0005)",
+            "the Acknowledgment character (ACK, U+0006)",
+            "the Bell character (BEL, U+0007)",
+            "the Backspace character (BS, U+0008)",
+            "the Horizontal Tab character (HT, U+0009)",
+            "the Line Feed character (LF, U+000A)",
+            "the Vertical Tab character (VT, U+000B)",
+            "the Form Feed character (FF, U+000C)",
+            "the Carriage Return character (CR, U+000D)",
+            "the Shift Out character (SO, U+000E)",
+            "the Shift In character (SI, U+000F)",
+            "the Data Link Escape character (DLE, U+0010)",
+            "the Device Control 1 character (DC1 or XON, U+0011)",
+            "the Device Control 2 character (DC2, U+0012)",
+            "the Device Control 3 character (DC3 or XOFF, U+0013)",
+            "the Device Control 4 character (DC4, U+0014)",
+            "the Negative Acknowledgement character (NAK, U+0015)",
+            "the Synchronous idle character (SYN, U+0016)",
+            "the End of Transmission Block character (ETB, U+0017)",
+            "the Cancel character (CAN, U+0018)",
+            "the End of Medium character (EM, U+0019)",
+            "the Substitute character (SUB, U+001A)",
+            "the Escape character (ESC, U+001B)",
+            "the File Separator character (FS, U+001C)",
+            "the Group Separator character (GS, U+001D)",
+            "the Record Separator character (RS, U+001E)",
+            "the Unit Separator character (US, U+001F)"
+        );
+
         public Node(string source, int index, int length) : base(source, index, length) { }
         protected Node() : base() { }
         public abstract object ToHtml();
@@ -61,58 +94,67 @@ namespace Tuulbox.Regexes
         private string explainChar()
         {
             if (Literal.Length == 1 && Literal[0] < 32)
-                return _controlCharactersExplain[Literal[0]];
+                return ControlCharactersExplain[Literal[0]];
             return "the “{0}” character (U+{1:X4})".Fmt(Literal, char.ConvertToUtf32(Literal, 0));
         }
-        private string[] _controlCharactersExplain = Ut.NewArray<string>(
-            "the Null character (NUL, U+0000)",
-            "the Start of Header character (SOH, U+0001)",
-            "the Start of Text character (STX, U+0002)",
-            "the End of Text character (ETX, U+0003)",
-            "the End of Transmission character (EOT, U+0004)",
-            "the Enquiry character (ENQ, U+0005)",
-            "the Acknowledgment character (ACK, U+0006)",
-            "the Bell character (BEL, U+0007)",
-            "the Backspace character (BS, U+0008)",
-            "the Horizontal Tab character (HT, U+0009)",
-            "the Line feed character (LF, U+000A)",
-            "the Vertical Tab character (VT, U+000B)",
-            "the Form feed character (FF, U+000C)",
-            "the Carriage return character (CR, U+000D)",
-            "the Shift Out character (SO, U+000E)",
-            "the Shift In character (SI, U+000F)",
-            "the Data Link Escape character (DLE, U+0010)",
-            "the Device Control 1 character (DC1 or XON, U+0011)",
-            "the Device Control 2 character (DC2, U+0012)",
-            "the Device Control 3 character (DC3 or XOFF, U+0013)",
-            "the Device Control 4 character (DC4, U+0014)",
-            "the Negative Acknowledgement character (NAK, U+0015)",
-            "the Synchronous idle character (SYN, U+0016)",
-            "the End of Transmission Block character (ETB, U+0017)",
-            "the Cancel character (CAN, U+0018)",
-            "the End of Medium character (EM, U+0019)",
-            "the Substitute character (SUB, U+001A)",
-            "the Escape character (ESC, U+001B)",
-            "the File Separator character (FS, U+001C)",
-            "the Group Separator character (GS, U+001D)",
-            "the Record Separator character (RS, U+001E)",
-            "the Unit Separator character (US, U+001F)"
-        );
     }
 
-    sealed class CharacterClass
+    abstract class CharacterClass
+    {
+        public static CharacterClass FromEscape(EscapeCode escape) { return new CharacterClassEscape(escape); }
+        public static CharacterClass FromCharacter(char ch) { return new CharacterClassCharacter(ch); }
+        public static CharacterClass FromTo(char from, char to) { return new CharacterClassFromTo(from, to); }
+    }
+
+    sealed class CharacterClassEscape : CharacterClass
+    {
+        public EscapeCode Escape;
+        public CharacterClassEscape(EscapeCode escape) { Escape = escape; }
+        public override string ToString()
+        {
+            switch (Escape)
+            {
+                case EscapeCode.Digit: return "a digit character";
+                case EscapeCode.NonDigit: return "a non-digit character";
+                case EscapeCode.SpaceCharacter: return "a space character (e.g. the space, the tab, the em-space, etc.)";
+                case EscapeCode.NonSpaceCharacter: return "a non-space character";
+                case EscapeCode.WordCharacter: return "a word character";
+                case EscapeCode.NonWordCharacter: return "a non-word character";
+            }
+            return null;
+        }
+    }
+
+    sealed class CharacterClassCharacter : CharacterClass
+    {
+        public char Char { get; private set; }
+        public CharacterClassCharacter(char ch) { Char = ch; }
+        public override string ToString()
+        {
+            if ((int) Char < 32)
+                return Node.ControlCharactersExplain[(int) Char];
+            return "the “{0}” character (U+{1:X4})".Fmt(Char, (int) Char);
+        }
+    }
+
+    sealed class CharacterClassFromTo : CharacterClass
     {
         public char From { get; private set; }
         public char To { get; private set; }
-        public CharacterClass(char from, char to) { From = from; To = to; }
+        public CharacterClassFromTo(char from, char to) { From = from; To = to; }
+        public override string ToString()
+        {
+            return "any character between “{0}” (U+{1:X4}) and “{2}” (U+{3:X4})".Fmt(From, (int) From, To, (int) To);
+        }
     }
 
     sealed class CharacterClassNode : Node
     {
         public CharacterClass[] Classes { get; private set; }
-        public CharacterClassNode(CharacterClass[] classes, string source, int index, int length) : base(source, index, length) { Classes = classes; }
+        public bool Negated { get; private set; }
+        public CharacterClassNode(CharacterClass[] classes, bool negated, string source, int index, int length) : base(source, index, length) { Classes = classes; Negated = negated; }
         private CharacterClassNode() : base() { }
-        public override object ToHtml() { return new SPAN { class_ = "node characterclass" }._(Source); }
+        public override object ToHtml() { return new SPAN { class_ = "node characterclass" }.Data("info", Classes.ToJsonList(cl => cl.ToString())).Data("negated", Negated ? (object) 1 : null)._(Source); }
     }
 
     sealed class AnyNode : Node

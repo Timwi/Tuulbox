@@ -8,16 +8,17 @@ using RT.Util.Drawing;
 
 namespace Tuulbox.Tools
 {
-    sealed class MakeTilable : ITool
+    sealed class MakeTilable : ITuul
     {
-        string ITool.Name { get { return "Make tilable background"; } }
-        string ITool.Url { get { return "/maketilable"; } }
-        string ITool.Keywords { get { return "make create tilable tile background backgrounds image picture repeat seamless"; } }
-        string ITool.Description { get { return "Takes an image you upload and generates a seamlessly tilable version of it."; } }
-        string ITool.Js { get { return null; } }
-        string ITool.Css { get { return null; } }
+        bool ITuul.Enabled { get { return false; } }
+        string ITuul.Name { get { return "Make tilable background"; } }
+        string ITuul.Url { get { return "/maketilable"; } }
+        string ITuul.Keywords { get { return "make create tilable tile background backgrounds image picture repeat seamless"; } }
+        string ITuul.Description { get { return "Takes an image you upload and generates a seamlessly tilable version of it."; } }
+        string ITuul.Js { get { return null; } }
+        string ITuul.Css { get { return null; } }
 
-        object ITool.Handle(HttpRequest req)
+        object ITuul.Handle(HttpRequest req)
         {
             if (req.Method == HttpMethod.Post)
             {

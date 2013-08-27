@@ -3,7 +3,7 @@ using RT.Util.ExtensionMethods;
 
 namespace Tuulbox
 {
-    sealed class Css : ITool
+    sealed class Css : ITuul
     {
         private static byte[] _css = @"
 
@@ -39,26 +39,26 @@ textarea {
     width: 100%;
     height: 15em;
 }
-.toolname { font-weight: bold; }
+.tuulname { font-weight: bold; }
 .explain { color: #888; margin: .2em 0 .7em 2em; font-size: 80%; }
 
 table.layout { table-layout: fixed; width: 100%; border-collapse: collapse; }
-table.layout col { width: 49%; }
-table.layout col.spacer { width: 2%; }
-table.layout td { vertical-align: top; }
+table.layout th, table.layout td { vertical-align: top; }
 
+kbd.accesskey { font-family: inherit; text-decoration: underline; }
 ".ToUtf8();
 
-        object ITool.Handle(HttpRequest req)
+        object ITuul.Handle(HttpRequest req)
         {
             return HttpResponse.Css(_css);
         }
 
-        string ITool.Name { get { return null; } }
-        string ITool.Url { get { return "/css"; } }
-        string ITool.Keywords { get { return null; } }
-        string ITool.Description { get { return null; } }
-        string ITool.Js { get { return null; } }
-        string ITool.Css { get { return null; } }
+        bool ITuul.Enabled { get { return true; } }
+        string ITuul.Name { get { return null; } }
+        string ITuul.Url { get { return "/css"; } }
+        string ITuul.Keywords { get { return null; } }
+        string ITuul.Description { get { return null; } }
+        string ITuul.Js { get { return null; } }
+        string ITuul.Css { get { return null; } }
     }
 }

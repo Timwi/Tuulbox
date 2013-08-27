@@ -2,8 +2,9 @@
 
 namespace Tuulbox
 {
-    interface ITool
+    interface ITuul
     {
+        bool Enabled { get; }
         string Name { get; }
         string Url { get; }
         string Keywords { get; }

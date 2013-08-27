@@ -4,22 +4,23 @@ using RT.Util.Json;
 
 namespace Tuulbox
 {
-    sealed class Js : ITool
+    sealed class Js : ITuul
     {
         private static byte[] _js = JsonValue.Fmt(@"
 // No site-global JavaScript yet!
 ").ToUtf8();
 
-        object ITool.Handle(HttpRequest req)
+        object ITuul.Handle(HttpRequest req)
         {
             return HttpResponse.JavaScript(_js);
         }
 
-        string ITool.Name { get { return null; } }
-        string ITool.Url { get { return "/js"; } }
-        string ITool.Keywords { get { return null; } }
-        string ITool.Description { get { return null; } }
-        string ITool.Js { get { return null; } }
-        string ITool.Css { get { return null; } }
+        bool ITuul.Enabled { get { return true; } }
+        string ITuul.Name { get { return null; } }
+        string ITuul.Url { get { return "/js"; } }
+        string ITuul.Keywords { get { return null; } }
+        string ITuul.Description { get { return null; } }
+        string ITuul.Js { get { return null; } }
+        string ITuul.Css { get { return null; } }
     }
 }

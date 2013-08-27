@@ -6,23 +6,19 @@ using Tuulbox.Regexes;
 
 namespace Tuulbox.Tools
 {
-    sealed class RegexesTool : ITool
+    sealed class RegexesTool : ITuul
     {
-        string ITool.Name { get { return "Regular expressions"; } }
-        string ITool.Url { get { return "/regexes"; } }
-        string ITool.Keywords { get { return "regular expressions regexes regexps regex match text pattern"; } }
-        string ITool.Description { get { return "Helps you debug a regular expression by determining where it stops matching."; } }
-        string ITool.Js { get { return _js ?? (_js = generateJs()); } }
-        string ITool.Css
+        bool ITuul.Enabled { get { return true; } }
+        string ITuul.Name { get { return "Regular expressions"; } }
+        string ITuul.Url { get { return "/regexes"; } }
+        string ITuul.Keywords { get { return "regular expressions regexes regexps regex match text pattern"; } }
+        string ITuul.Description { get { return "Explains the meaning of each element in a regular expression."; } }
+        string ITuul.Js { get { return _js ?? (_js = generateJs()); } }
+        string ITuul.Css
         {
             get
             {
                 return @"
-/*
-.node { display: inline-block; padding: .1em .25em; margin: .1em .25em; border: 1px solid #eee; border-radius: 5px; }
-.node:hover { border-color: #888; }
-*/
-
 #regex-show { color: black; font-size: 250%; }
 #regex-show:hover .node { color: #ddd; }
 #regex-show:hover .node.innerhover:hover { color: #000; }
@@ -32,11 +28,11 @@ namespace Tuulbox.Tools
     position: absolute;
     display: none;
     padding: .5em 1.2em;
-    background-image: linear-gradient(bottom, #def 0%, #8ad 100%);
-    background-image: -o-linear-gradient(bottom, #def 0%, #8ad 100%);
-    background-image: -moz-linear-gradient(bottom, #def 0%, #8ad 100%);
-    background-image: -webkit-linear-gradient(bottom, #def 0%, #8ad 100%);
-    background-image: -ms-linear-gradient(bottom, #def 0%, #8ad 100%);
+    background-image: linear-gradient(bottom, #ace 0%, #def 100%);
+    background-image: -o-linear-gradient(bottom, #ace 0%, #def 100%);
+    background-image: -moz-linear-gradient(bottom, #ace 0%, #def 100%);
+    background-image: -webkit-linear-gradient(bottom, #ace 0%, #def 100%);
+    background-image: -ms-linear-gradient(bottom, #ace 0%, #def 100%);
     border: 2px solid #666;
     border-radius: 1em;
     color: black;
@@ -47,6 +43,8 @@ namespace Tuulbox.Tools
 
 #regex-explain h3, #regex-explain p { margin: .7em 0; }
 ";
+//table.layout col { width: 49%; }
+//table.layout col.spacer { width: 2%; }
             }
         }
 
@@ -63,6 +61,39 @@ $(function()
         [ 'literal', function(elem) { return '<h3>Literal</h3><p>' + (elem.data('istext') ? 'Matches the text between \\Q and \\E.' : 'Matches the specified text.'); } ],
         [ 'escapedliteral', function(elem) { return '<h3>Escaped literal</h3><p>Matches ' + elem.data('char') + '.</p>'; } ],
         [ 'or', '<h3>Or</h3><p>Matches any one of the several subexpressions.</p><p class=""extra"">Also known as “alternation”.</p>' ],
+        [ 'any', '<h3>Any character</h3><p>In single-line mode, matches a single character. Without single-line mode, matches a single character except newlines.</p>' ],
+        [ 'start', '<h3>Beginning of line or string</h3><p>In multi-line mode, matches at the beginning of a line. Without multi-line mode, matches only at the beginning of the entire input string.</p>' ],
+        [ 'end', '<h3>End of line or string</h3><p>In multi-line mode, matches at the end of a line. Without multi-line mode, matches either at the end of the entire input string, or before a <code>\\n</code> (newline) character at the end of the entire input string.</p>' ],
+
+        [ 'characterclass', function(elem)
+        {
+            var info = elem.data('info');
+            var negated = elem.data('negated');
+            var str = negated
+                ? '<h3>Negated character class</h3><p>Matches a single character that is not any of the following:</p><ul>'
+                : '<h3>Character class</h3><p>Matches any of the following characters:</p><ul>';
+            for (var i = 0; i < info.length; i++)
+                str += '<li>' + $('<div>').text(info[i]).html() + '</li>';
+            return str + '</ul>';
+        }],
+
+        [ 'escapecode', function(elem)
+        {
+            switch (elem.data('code'))
+            {
+                case 'BeginningOfString': return '<h3>Beginning of string</h3><p>Matches only at the beginning of the string, irrespective of the multi-line setting.</p>';
+                case 'WordBoundary': return '<h3>Word boundary</h3><p>Matches at places where the string changes from a word character to a non-word character or vice versa, or at the beginning or end of the string if it straddles a word character.</p><p>For example, in the string:</p><blockquote><code>""he (or she)""</code></blockquote><p>there are six word boundaries, here marked with vertical lines:</p><blockquote><code>""</code>|<code>he</code>|<code> (</code>|<code>or</code>|<code> </code>|<code>she</code>|<code>)""</code></blockquote>';
+                case 'NonWordBoundary': return '<h3>Non-word boundary</h3><p>Matches at places where there is not a word boundary. See <code>\\b</code> for an example.</p>';
+                case 'Digit': return '<h3>Digit</h3><p>Matches any digit character, including digits from other scripts (such as the Hindi numbers).</p>';
+                case 'NonDigit': return '<h3>Non-digit</h3><p>Matches any character that is not a digit character.</p>';
+                case 'SpaceCharacter': return '<h3>Space character</h3><p>Matches any space character, including the tab, the em space, etc.</p>';
+                case 'NonSpaceCharacter': return '<h3>Non-space character</h3><p>Matches any character that is not a space character (which includes the tab, the em space, etc.).</p>';
+                case 'WordCharacter': return '<h3>Word character</h3><p>Matches any word character, which includes letters, digits, and connector punctuation (e.g. the underscore, U+005F).</p>';
+                case 'NonWordCharacter': return '<h3>Non-word character</h3><p>Matches any character that is not a word character (which includes letters, digits, and connector punctuation such as the underscore, U+005F).</p>';
+                case 'EndOfStringAlmost': return '<h3>End of string</h3><p>Matches either at the end of the entire input string, or before a <code>\\n</code> (newline) character at the end of the entire input string, irrespective of the multi-line setting.</p>';
+                case 'EndOfStringReally': return '<h3>End of string only</h3><p>Matches only at the end of the entire input string, irrespective of the multi-line setting.</p>';
+            }
+        }],
 
         [ 'parenthesis', function(elem)
         {
@@ -70,10 +101,10 @@ $(function()
             {
                 case 'Capturing': return '<h3>Capture</h3><p>Captures (remembers) the subexpression. The string matched by the subexpression is typically stored in a variable.<p>To group expressions without capturing their matches, use <code>(?:...)</code>.';
                 case 'Grouping': return '<h3>Group</h3><p>Groups several literals and operators into a subexpression, typically to apply an operator such as <code>*</code> on the entire subexpression.<p>To capture the match of a subexpression into a variable, omit the <code>?:</code>.';
-                case 'PositiveLookAhead': return '<h3>Positive zero-width look-ahead assertion</h3><p>Checks if the text following the current position matches the subexpression, but doesn’t consume any of it; if the subexpression matches, returns a zero-width match.<p>To check if the following text does <em>not</em> match the subexpression, use <code>(?!...)</code>.<p>To check if the <em>earlier</em> text matches the subexpression (look-<em>behind</em>), use <code>(?<=...)</code>.';
-                case 'NegativeLookAhead': return '<h3>Negative zero-width look-ahead assertion</h3><p>Checks if the text following the current position <em>does not</em> match the subexpression. If the subexpression does not match, returns a zero-width match.<p>To check if the following text <em>does</em> match the subexpression, use <code>(?=...)</code>.<p>To check if the <em>earlier</em> text does not match the subexpression (look-<em>behind</em>), use <code>(?<!...)</code>.';
-                case 'PositiveLookBehind': return '<h3>Positive zero-width look-behind assertion</h3><p>Checks if the text before the current position (i.e. the text matched by the regular expression so far, and possibly more text before that) matches the subexpression. If the subexpression matches, returns a zero-width match.<p>To check if the earlier text does <em>not</em> match the subexpression, use <code>(?<!...)</code>.<p>To check if the <em>following</em> text matches the subexpression (look-<em>ahead</em>), use <code>(?=...)</code>.';
-                case 'NegativeLookBehind': return '<h3>Negative zero-width look-behind assertion</h3><p>Checks if the text before the current position (i.e. the text matched by the regular expression so far, and possibly more text before that) <em>does not</em> the subexpression. If the subexpression does not match, returns a zero-width match.<p>To check if the earlier text <em>does</em> match the subexpression, use <code>(?<=...)</code>.<p>To check if the <em>following</em> text does not match the subexpression (look-<em>ahead</em>), use <code>(?!...)</code>.';
+                case 'PositiveLookAhead': return '<h3>Positive zero-width look-ahead assertion</h3><p>Checks if the text following the current position matches the subexpression, but doesn’t consume any of it; if the subexpression matches, returns a zero-width match.<p>To check if the following text does <em>not</em> match the subexpression, use <code>(?!...)</code>.<p>To check if the <em>earlier</em> text matches the subexpression (look-<em>behind</em>), use <code>(?&lt;=...)</code>.';
+                case 'NegativeLookAhead': return '<h3>Negative zero-width look-ahead assertion</h3><p>Checks if the text following the current position <em>does not</em> match the subexpression. If the subexpression does not match, returns a zero-width match.<p>To check if the following text <em>does</em> match the subexpression, use <code>(?=...)</code>.<p>To check if the <em>earlier</em> text does not match the subexpression (look-<em>behind</em>), use <code>(?&lt;!...)</code>.';
+                case 'PositiveLookBehind': return '<h3>Positive zero-width look-behind assertion</h3><p>Checks if the text before the current position (i.e. the text matched by the regular expression so far, and possibly more text before that) matches the subexpression. If the subexpression matches, returns a zero-width match.<p>To check if the earlier text does <em>not</em> match the subexpression, use <code>(?&lt;!...)</code>.<p>To check if the <em>following</em> text matches the subexpression (look-<em>ahead</em>), use <code>(?=...)</code>.';
+                case 'NegativeLookBehind': return '<h3>Negative zero-width look-behind assertion</h3><p>Checks if the text before the current position (i.e. the text matched by the regular expression so far, and possibly more text before that) <em>does not</em> the subexpression. If the subexpression does not match, returns a zero-width match.<p>To check if the earlier text <em>does</em> match the subexpression, use <code>(?&lt;=...)</code>.<p>To check if the <em>following</em> text does not match the subexpression (look-<em>ahead</em>), use <code>(?!...)</code>.';
                 case 'Atomic': return '<h3>Atomic match</h3><p>Allows the subexpression to use only the first match it finds. The subexpression can use backtracking to find that first match, but once it has found it, it must stick to it; if the rest of the regular expression (after the atomic operator) then does not match, the subexpression is not allowed to backtrack.';
             }
         }],
@@ -97,12 +128,12 @@ $(function()
                 var op = '';
                 switch (elem.data('type'))
                 {
-                    case 'Star': op = '*'; html += '<p>Matches the subexpression any number of times (including zero times).<p>To exclude zero times, use <code>+</code> instead of <code>*</code>.'; break;
-                    case 'Plus': op = '+'; html += '<p>Matches the subexpression any number of times (but at least once).<p>To exclude zero times, use <code>*</code> instead of <code>+</code>.'; break;
+                    case 'Star': op = '*'; html += '<p>Matches the subexpression any number of times, including zero times.<p>To exclude zero times, use <code>+</code> instead of <code>*</code>.'; break;
+                    case 'Plus': op = '+'; html += '<p>Matches the subexpression any number of times, but at least once.<p>To include zero times, use <code>*</code> instead of <code>+</code>.'; break;
                     case 'Min': op = '{' + elem.data('min') + ',}'; html += '<p>Matches the subexpression any number of times, but at least ' + elem.data('min') + ' times.'; break;
                     case 'Max': op = '{,' + elem.data('max') + '}'; html += '<p>Matches the subexpression up to ' + elem.data('max') + ' times (including possibly zero times).<p>To exclude zero times, use <code>{1,' + elem.data('max') + '}</code> instead. To include infinite number of times, use <code>*</code> instead.'; break;
                     case 'MinMax': op = '{' + elem.data('min') + ',' + elem.data('max') + '}'; html += '<p>Matches the subexpression between ' + elem.data('min') + ' and ' + elem.data('max') + ' times.<p>To include infinite number of times, use <code>{' + elem.data('min') + ',}</code> instead.'; break;
-                    case 'Specified': op = '{' + elem.data('min') + '}'; html += '<p>Matches the subexpression exactly ' + elem.data('min') + ' times.<p>To match the subexpression a variable number of times, use (for instance) <code>{5,10}</code> for 5 to 10 times.'; break;
+                    case 'Specific': op = '{' + elem.data('min') + '}'; html += '<p>Matches the subexpression exactly ' + elem.data('min') + ' times.<p>To match the subexpression a variable number of times, use (for instance) <code>{5,10}</code> for 5 to 10 times.'; break;
                 }
                 if (elem.data('greediness') == 'Nongreedy')
                     html += '<p>The operator is <b>non-greedy</b>: it matches the subexpression the <em>minimum</em> number of times first, and if no match is found for the rest of the regular expression, matches the subexpression <em>more</em> times and then tries again. To use the greedy variant, remove the <code>?</code>.';
@@ -141,7 +172,7 @@ $(function()
 ";
         }
 
-        object ITool.Handle(HttpRequest req)
+        object ITuul.Handle(HttpRequest req)
         {
             string regex = null, input = null;
             bool single = true, multi = false, ignoreCase = false, ignoreWhitespace = false;
@@ -181,17 +212,20 @@ $(function()
 
             return new FORM { method = method.post, action = req.Url.ToHref() }._(
                 html,
-                new TABLE { class_ = "layout" }._(new COL(), new COL { class_ = "spacer" }, new COL(), new TR(
-                    new TD(
-                        new H3(Helpers.LabelWithAccessKey("Regular expression", "r", "regex_regex")),
-                        new DIV(new TEXTAREA { name = "regex", id = "regex_regex" }._(regex))
-                    ),
-                    new TD(),
-                    new TD(
-                        new H3(Helpers.LabelWithAccessKey("Input text", "n", "regex_input")),
-                        new DIV(new TEXTAREA { name = "input", id = "regex_input" }._(input))
+                new TABLE { class_ = "layout" }._(
+                //new COL(), new COL { class_ = "spacer" }, new COL(),
+                    new TR(
+                        new TD(
+                            new H3(Helpers.LabelWithAccessKey("Regular expression", "r", "regex_regex")),
+                            new DIV(new TEXTAREA { name = "regex", id = "regex_regex" }._(regex))
+                //),
+                //new TD(),
+                //new TD(
+                //    new H3(Helpers.LabelWithAccessKey("Input text", "n", "regex_input")),
+                //    new DIV(new TEXTAREA { name = "input", id = "regex_input" }._(input))
+                        )
                     )
-                )),
+                ),
                 new DIV(new INPUT { type = itype.checkbox, name = "s", value = "1", id = "regex_s", checked_ = single }, Helpers.LabelWithAccessKey(" Single-line mode", "s", "regex_s"),
                     new DIV { class_ = "explain" }._("If set, ", new CODE("."), " matches any character; if unset, it matches any except newline.")),
                 new DIV(new INPUT { type = itype.checkbox, name = "m", value = "1", id = "regex_m", checked_ = multi }, Helpers.LabelWithAccessKey(" Multi-line mode", "m", "regex_m"),
@@ -200,7 +234,7 @@ $(function()
                     new DIV { class_ = "explain" }._("If set, lower-case and upper-case letters are treated as equivalent.")),
                 new DIV(new INPUT { type = itype.checkbox, name = "x", value = "1", id = "regex_x", checked_ = ignoreWhitespace }, Helpers.LabelWithAccessKey(" Ignore pattern white-space", "w", "regex_x"),
                     new DIV { class_ = "explain" }._("If set, spaces, tabs and newlines in the regular expression are ignored. Also, the ", new CODE("#"), " character introduces a comment that spans until the end of the line.")),
-                new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(new U("G"), "o for it"))
+                new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(Helpers.TextWithAccessKey("Go for it", "g")))
             );
         }
     }

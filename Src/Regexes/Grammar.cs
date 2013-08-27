@@ -57,14 +57,26 @@ namespace Tuulbox.Regexes
                             new S(@"\Q").Then(S.Any.Repeat()).Then(@"\E").Atomic().Process(m => (Node) new LiteralNode(true, m.Match, m.OriginalSource, m.Index, m.Length))
                         ).Atomic();
 
-                        var characterClass = ((S) '[')
-                            .Then(((S) ']').Process(c => new CharacterClass(']', ']')).OptionalGreedy())
+                        var characterClassInner = ((S) ']').Process(c => CharacterClass.FromCharacter(']')).OptionalGreedy()
                             .ThenRaw(Stringerex.Ors(
-                                S.Not('-').Process(m => m.Match[0]).Then('-').Then(S.Not(']'), (from, m) => new CharacterClass(from, m.Match[0])),
-                                S.Any.Process(m => new CharacterClass(m.Match[0], m.Match[0]))
+                                S.Not('-').Process(m => m.Match[0]).Then('-').Then(S.Not(']'), (from, m) => CharacterClass.FromTo(from, m.Match[0])),
+                                S.Not('\\').Process(m => CharacterClass.FromCharacter(m.Match[0])),
+                                Stringerex.Ors(
+                                    new S(@"\d").Process(m => EscapeCode.Digit),
+                                    new S(@"\D").Process(m => EscapeCode.NonDigit),
+                                    new S(@"\s").Process(m => EscapeCode.SpaceCharacter),
+                                    new S(@"\S").Process(m => EscapeCode.NonSpaceCharacter),
+                                    new S(@"\w").Process(m => EscapeCode.WordCharacter),
+                                    new S(@"\W").Process(m => EscapeCode.NonWordCharacter)
+                                ).Process(m => CharacterClass.FromEscape(m.Result)),
+                                new S('\\').Then(S.Any.Process(m => m.Match[0])).Process(m => CharacterClass.FromCharacter(m.Result))
                             ).RepeatGreedy(1), Enumerable.Concat)
-                            .Then(']')
-                            .Process(m => (Node) new CharacterClassNode(m.Result.ToArray(), m.OriginalSource, m.Index, m.Length));
+                            .Then(']');
+                        var characterClass = Stringerex.Ors(
+                            ((S) "[^").Then(characterClassInner).Process(m => (Node) new CharacterClassNode(m.Result.ToArray(), true, m.OriginalSource, m.Index, m.Length)),
+                            ((S) '[').Then(characterClassInner).Process(m => (Node) new CharacterClassNode(m.Result.ToArray(), false, m.OriginalSource, m.Index, m.Length))
+                        );
+
                         var start = ((S) '^').Process(m => (Node) new StartNode(m.OriginalSource, m.Index, m.Length));
                         var end = ((S) '$').Process(m => (Node) new EndNode(m.OriginalSource, m.Index, m.Length));
                         var any = ((S) '.').Process(m => (Node) new AnyNode(m.OriginalSource, m.Index, m.Length));
