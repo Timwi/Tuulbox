@@ -56,6 +56,7 @@
     <Compile Include="Tools\Regexes.cs" />
     <Compile Include="Tools\Rotate.cs" />
     <Compile Include="Skin.cs" />
+    <Compile Include="Tools\XmlPrettify.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Generex\Generex.csproj">
