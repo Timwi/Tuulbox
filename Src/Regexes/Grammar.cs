@@ -56,7 +56,8 @@ namespace Tuulbox.Regexes
                                 new S('z').Process(m => EscapeCode.EndOfStringAlmost),
                                 new S('Z').Process(m => EscapeCode.EndOfStringReally),
                                 escapeCodeGroup
-                            )).Process(m => (Node) new EscapeCodeNode(m.Result, m.OriginalSource, m.Index, m.Length))
+                            )).Process(m => (Node) new EscapeCodeNode(m.Result, m.OriginalSource, m.Index, m.Length)),
+                            new S(@"\k<").Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>').Atomic().Process(m => (Node) new NamedBackreference(m.Result, m.OriginalSource, m.Index, m.Length))
                         ).Atomic();
 
                         // In a character class, \b means “backspace character”

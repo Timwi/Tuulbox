@@ -67,6 +67,7 @@ $(function()
         [ 'any', '<h3>Any character</h3><p>In single-line mode, matches a single character. Without single-line mode, matches a single character except newlines.</p>' ],
         [ 'start', '<h3>Beginning of line or string</h3><p>In multi-line mode, matches at the beginning of a line. Without multi-line mode, matches only at the beginning of the entire input string.</p>' ],
         [ 'end', '<h3>End of line or string</h3><p>In multi-line mode, matches at the end of a line. Without multi-line mode, matches either at the end of the entire input string, or before a <code>\\n</code> (newline) character at the end of the entire input string.</p>' ],
+        [ 'namedbackref', '<h3>Named backreference</h3><p>Matches only the same text that was previously matched by the named capturing parenthesis with the same name.' ],
 
         [ 'characterclass', function(elem)
         {

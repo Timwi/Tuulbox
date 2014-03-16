@@ -359,4 +359,12 @@ namespace Tuulbox.Regexes
         private EscapeCodeNode() : base() { }
         public override object ToHtml() { return new SPAN { class_ = "node escapecode" }.Data("code", Code.ToString())._(Source); }
     }
+
+    sealed class NamedBackreference : Node
+    {
+        public string Name { get; private set; }
+        public NamedBackreference(string name, string source, int index, int length) : base(source, index, length) { Name = name; }
+        private NamedBackreference() { }
+        public override object ToHtml() { return new SPAN { class_ = "node namedbackref" }.Data("name", Name)._(Source); }
+    }
 }
