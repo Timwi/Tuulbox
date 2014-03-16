@@ -74,36 +74,45 @@ namespace Tuulbox.Regexes
         public Node(string source, int index, int length) : base(source, index, length) { }
         protected Node() : base() { }
         public abstract object ToHtml();
-    }
 
-    sealed class LiteralNode : Node
-    {
-        public bool IsText { get; private set; }
-        public string Literal { get; private set; }
-        public LiteralNode(bool isText, string literal, string source, int index, int length) : base(source, index, length) { IsText = isText; Literal = literal; }
-        private LiteralNode() : base() { }
-        public override object ToHtml() { return new SPAN { class_ = "node literal" }.Data("text", IsText ? "1" : "0")._(Source); }
-    }
-
-    sealed class EscapedLiteralNode : Node
-    {
-        public string Literal { get; private set; }
-        public EscapedLiteralNode(string literal, string source, int index, int length) : base(source, index, length) { Literal = literal; }
-        private EscapedLiteralNode() : base() { }
-        public override object ToHtml() { return new SPAN { class_ = "node escapedliteral" }.Data("char", explainChar())._(Source); }
-        private string explainChar()
+        public static string ExplainString(string str, bool concise = false)
         {
-            if (Literal.Length == 1 && Literal[0] < 32)
-                return ControlCharactersExplain[Literal[0]];
-            return "the “{0}” character (U+{1:X4})".Fmt(Literal, char.ConvertToUtf32(Literal, 0));
+            if (str.Length == 1 && str[0] < 32)
+                return ControlCharactersExplain[str[0]];
+            else if (str.Length == 1)
+                return (concise ? "“{0}” (U+{1:X4})" : "the “{0}” character (U+{1:X4})").Fmt(str, char.ConvertToUtf32(str, 0));
+            else
+                return "the text “{0}”".Fmt(str);
         }
+    }
+
+    abstract class TextNode : Node
+    {
+        public string Literal { get; private set; }
+        public TextNode(string literal, string source, int index, int length) : base(source, index, length) { Literal = literal; }
+        protected TextNode() : base() { }
+    }
+
+    sealed class LiteralNode : TextNode
+    {
+        public bool IsQE { get; private set; }
+        public LiteralNode(string literal, string source, int index, int length, bool isQE = false) : base(literal, source, index, length) { IsQE = isQE; }
+        private LiteralNode() : base() { }
+        public override object ToHtml() { return new SPAN { class_ = "node literal" }.Data("text", ExplainString(Literal)).Data("isqe", IsQE ? "1" : "0")._(Source == "\n" ? "⏎\n" : Source); }
+    }
+
+    sealed class EscapedLiteralNode : TextNode
+    {
+        public EscapedLiteralNode(string literal, string source, int index, int length) : base(literal, source, index, length) { }
+        private EscapedLiteralNode() : base() { }
+        public override object ToHtml() { return new SPAN { class_ = "node escapedliteral" }.Data("char", ExplainString(Literal))._(Source); }
     }
 
     abstract class CharacterClass : IEquatable<CharacterClass>
     {
         public static CharacterClass FromEscape(EscapeCode escape) { return new CharacterClassEscape(escape); }
         public static CharacterClass FromCharacter(char ch) { return new CharacterClassCharacter(ch); }
-        public static CharacterClass FromTo(char from, char to) { return new CharacterClassFromTo(from, to); }
+        public static CharacterClass FromTo(char from, char to) { return new CharacterClassRange(from, to); }
         public abstract bool Equals(CharacterClass other);
         public abstract override int GetHashCode();
     }
@@ -141,9 +150,7 @@ namespace Tuulbox.Regexes
         public CharacterClassCharacter(char ch) { Char = ch; }
         public override string ToString()
         {
-            if ((int) Char < 32)
-                return Node.ControlCharactersExplain[(int) Char];
-            return "the “{0}” character (U+{1:X4})".Fmt(Char, (int) Char);
+            return Node.ExplainString(Char.ToString());
         }
         public override bool Equals(CharacterClass other)
         {
@@ -155,18 +162,21 @@ namespace Tuulbox.Regexes
         }
     }
 
-    sealed class CharacterClassFromTo : CharacterClass
+    sealed class CharacterClassRange : CharacterClass
     {
         public char From { get; private set; }
         public char To { get; private set; }
-        public CharacterClassFromTo(char from, char to) { From = from; To = to; }
+        public CharacterClassRange(char from, char to) { From = from; To = to; }
         public override string ToString()
         {
-            return "any character between “{0}” (U+{1:X4}) and “{2}” (U+{3:X4})".Fmt(From, (int) From, To, (int) To);
+            return "any character between {0} and {1}".Fmt(
+                Node.ExplainString(From.ToString(), concise: true),
+                Node.ExplainString(To.ToString(), concise: true)
+            );
         }
         public override bool Equals(CharacterClass other)
         {
-            return (other is CharacterClassFromTo) && ((CharacterClassFromTo) other).From == From && ((CharacterClassFromTo) other).To == To;
+            return (other is CharacterClassRange) && ((CharacterClassRange) other).From == From && ((CharacterClassRange) other).To == To;
         }
         public override int GetHashCode()
         {
@@ -209,14 +219,15 @@ namespace Tuulbox.Regexes
 
     enum ParenthesisType
     {
-        NamedCapturing,
         Capturing,
+        NamedCapturing,
         Grouping,
         PositiveLookAhead,
         NegativeLookAhead,
         PositiveLookBehind,
         NegativeLookBehind,
-        Atomic
+        Atomic,
+        Flags
     }
 
     class ParenthesisNode : OneChildNode
@@ -234,6 +245,26 @@ namespace Tuulbox.Regexes
         public NamedParenthesisNode(string name, Node child, string source, int index, int length)
             : base(ParenthesisType.NamedCapturing, child, source, index, length) { GroupName = name; }
         protected override Tag addData(Tag tag) { return base.addData(tag).Data("groupname", GroupName); }
+    }
+
+    [Flags]
+    enum OptionFlags
+    {
+        None = 0,
+        IgnoreCase = 1 << 0,
+        Multiline = 1 << 1,
+        ExplicitCapture = 1 << 2,
+        SingleLine = 1 << 3,
+        IgnoreWhitespace = 1 << 4
+    }
+
+    sealed class FlagsParenthesisNode : ParenthesisNode
+    {
+        public OptionFlags Enable { get; private set; }
+        public OptionFlags Disable { get; private set; }
+        public FlagsParenthesisNode(OptionFlags enable, OptionFlags disable, Node child, string source, int index, int length)
+            : base(ParenthesisType.Flags, child, source, index, length) { Enable = enable; Disable = disable; }
+        protected override Tag addData(Tag tag) { return base.addData(tag).Data("enable", (int) Enable).Data("disable", (int) Disable); }
     }
 
     enum RepeaterType

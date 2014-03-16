@@ -19,7 +19,7 @@ namespace Tuulbox.Tools
             get
             {
                 return @"
-#regex-show { color: black; font-size: 250%; }
+#regex-show { color: black; font-size: 250%; white-space: pre; }
 #regex-show:hover .node { color: #ddd; }
 #regex-show:hover .node.innerhover:hover { color: #000; }
 #regex-show:hover .node.innerhover:hover .node { color: #68a; }
@@ -43,8 +43,6 @@ namespace Tuulbox.Tools
 
 #regex-explain h3, #regex-explain p { margin: .7em 0; }
 ";
-//table.layout col { width: 49%; }
-//table.layout col.spacer { width: 2%; }
             }
         }
 
@@ -56,9 +54,14 @@ $(function()
 {
     var $curTooltip = null;
 
+    var htmlEscape = function(str)
+    {
+        return str.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('""', '&quot;').replace(""'"", '&#39;');
+    };
+
     var explains = [
         [ 'then', '<h3>Literal</h3><p>Matches the specified text.</p>' ],
-        [ 'literal', function(elem) { return '<h3>Literal</h3><p>' + (elem.data('istext') ? 'Matches the text between \\Q and \\E.' : 'Matches the specified text.'); } ],
+        [ 'literal', function(elem) { return '<h3>Literal</h3><p>Matches ' + htmlEscape(elem.data('text')) + '.' + (elem.data('isqe') ? '<p>The <code>\\Q</code>...<code>\\E</code> operator is not supported by .NET.' : ''); } ],
         [ 'escapedliteral', function(elem) { return '<h3>Escaped literal</h3><p>Matches ' + elem.data('char') + '.</p>'; } ],
         [ 'or', '<h3>Or</h3><p>Matches any one of the several subexpressions.</p><p class=""extra"">Also known as “alternation”.</p>' ],
         [ 'any', '<h3>Any character</h3><p>In single-line mode, matches a single character. Without single-line mode, matches a single character except newlines.</p>' ],
@@ -97,6 +100,16 @@ $(function()
 
         [ 'parenthesis', function(elem)
         {
+            function flagList(flags)
+            {
+                var list = [];
+                if (flags & 1) list.push('<li><b>Ignore case</b>');
+                if (flags & 2) list.push('<li><b>Multi-line mode</b> — changes the meaning of <code>^</code> and <code>$</code>.');
+                if (flags & 4) list.push('<li><b>Explicit capture</b> — when on, plain parentheses do not capture their matches automatically. This option is only supported by .NET.');
+                if (flags & 8) list.push('<li><b>Single-line mode</b> — changes the meaning of <code>.</code>.');
+                if (flags & 16) list.push('<li><b>Ignore whitespace</b> — when on, ignores whitespace and comments initiated by <code>#</code> until the end of the line.');
+                return '<ul>' + list.join('') + '</ul>';
+            }
             switch (elem.data('type'))
             {
                 case 'Capturing': return '<h3>Capture</h3><p>Captures (remembers) the subexpression. The string matched by the subexpression is typically stored in a variable.<p>To group expressions without capturing their matches, use <code>(?:...)</code>.';
@@ -107,6 +120,19 @@ $(function()
                 case 'PositiveLookBehind': return '<h3>Positive zero-width look-behind assertion</h3><p>Checks if the text before the current position (i.e. the text matched by the regular expression so far, and possibly more text before that) matches the subexpression. If the subexpression matches, returns a zero-width match.<p>To check if the earlier text does <em>not</em> match the subexpression, use <code>(?&lt;!...)</code>.<p>To check if the <em>following</em> text matches the subexpression (look-<em>ahead</em>), use <code>(?=...)</code>.';
                 case 'NegativeLookBehind': return '<h3>Negative zero-width look-behind assertion</h3><p>Checks if the text before the current position (i.e. the text matched by the regular expression so far, and possibly more text before that) <em>does not</em> match the subexpression. If the subexpression does not match, returns a zero-width match.<p>To check if the earlier text <em>does</em> match the subexpression, use <code>(?&lt;=...)</code>.<p>To check if the <em>following</em> text does not match the subexpression (look-<em>ahead</em>), use <code>(?!...)</code>.';
                 case 'Atomic': return '<h3>Atomic match</h3><p>Allows the subexpression to use only the first match it finds. The subexpression can use backtracking to find that first match, but once it has found it, it must stick to it; if the rest of the regular expression (after the atomic operator) then does not match, the subexpression is not allowed to backtrack.';
+
+                case 'Flags':
+                    var enable = elem.data('enable');
+                    var disable = elem.data('disable');
+                    if (enable)
+                    {
+                        return '<h3>Enable/disable options</h3><p><b>Enables</b> the following options:' + flagList(enable) +
+                            (disable ? '<p>and <b>disables</b> the following options:' + flagList(disable) : '');
+                    }
+                    else
+                    {
+                        return '<h3>Enable/disable options</h3><p><b>Disables</b> the following options:' + flagList(disable);
+                    }
             }
         }],
 
@@ -182,7 +208,7 @@ $(function()
 
             if (req.Method == HttpMethod.Post)
             {
-                regex = req.Post["regex"].Value;
+                regex = req.Post["regex"].Value.Replace("\r", "");
                 input = req.Post["input"].Value;
                 single = req.Post["s"].Value == "1";
                 multi = req.Post["m"].Value == "1";
