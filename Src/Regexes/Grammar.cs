@@ -57,10 +57,12 @@ namespace Tuulbox.Regexes
                             new S(@"\Q").Then(S.Any.Repeat()).Then(@"\E").Atomic().Process(m => (Node) new LiteralNode(true, m.Match, m.OriginalSource, m.Index, m.Length))
                         ).Atomic();
 
-                        var characterClassInner = ((S) ']').Process(c => CharacterClass.FromCharacter(']')).OptionalGreedy()
+                        var characterClassInner =
+                            // ①: Accept a close-square-bracket at the beginning of the character class (e.g., []] is a valid class that matches ']').
+                            ((S) ']').Process(c => CharacterClass.FromCharacter(']')).OptionalGreedy()
                             .ThenRaw(Stringerex.Ors(
-                                S.Not('-').Process(m => m.Match[0]).Then('-').Then(S.Not(']'), (from, m) => CharacterClass.FromTo(from, m.Match[0])),
-                                S.Not('\\').Process(m => CharacterClass.FromCharacter(m.Match[0])),
+
+                                // ②: Some predefined escapes for character classes
                                 Stringerex.Ors(
                                     new S(@"\d").Process(m => EscapeCode.Digit),
                                     new S(@"\D").Process(m => EscapeCode.NonDigit),
@@ -69,8 +71,20 @@ namespace Tuulbox.Regexes
                                     new S(@"\w").Process(m => EscapeCode.WordCharacter),
                                     new S(@"\W").Process(m => EscapeCode.NonWordCharacter)
                                 ).Process(m => CharacterClass.FromEscape(m.Result)),
-                                new S('\\').Then(S.Any.Process(m => m.Match[0])).Process(m => CharacterClass.FromCharacter(m.Result))
-                            ).RepeatGreedy(1), Enumerable.Concat)
+
+                                // ③: Character classes. Start with anything that isn’t a minus, but take care of escape sequences
+                                Stringerex.Ors(
+                                    S.Not('-', '\\').Process(m => m.Match[0]),
+                                    new S('\\').Then(S.Any.Process(m => unescapeLiteral(m.Match[0])))
+                                ).Then('-').Then(S.Not(']'), (from, m) => CharacterClass.FromTo(from, m.Match[0])),
+
+                                // ④: All other character escapes
+                                new S('\\').Then(S.Any.Process(m => CharacterClass.FromCharacter(unescapeLiteral(m.Match[0])))),
+
+                                // ⑤: Anything else is a literal character.
+                                S.Any.Process(m => CharacterClass.FromCharacter(m.Match[0]))
+
+                            ).Repeat(min: 1), Enumerable.Concat)
                             .Then(']');
                         var characterClass = Stringerex.Ors(
                             ((S) "[^").Then(characterClassInner).Process(m => (Node) new CharacterClassNode(m.Result.ToArray(), true, m.OriginalSource, m.Index, m.Length)),
@@ -82,15 +96,27 @@ namespace Tuulbox.Regexes
                         var any = ((S) '.').Process(m => (Node) new AnyNode(m.OriginalSource, m.Index, m.Length));
 
                         var parentheses = Stringerex.Ors(
-                            new S("(?:").Process(m => ParenthesisType.Grouping),
-                            new S("(?=").Process(m => ParenthesisType.PositiveLookAhead),
-                            new S("(?<=").Process(m => ParenthesisType.PositiveLookBehind),
-                            new S("(?!").Process(m => ParenthesisType.NegativeLookAhead),
-                            new S("(?<!").Process(m => ParenthesisType.NegativeLookBehind),
-                            new S("(?>").Process(m => ParenthesisType.Atomic),
-                            new S('(').Process(m => ParenthesisType.Capturing)
-                        ).Atomic().ThenRaw(generex, (type, inner) => new { Type = type, Inner = inner }).Then(')')
-                            .Process(m => (Node) new ParenthesisNode(m.Result.Type, m.Result.Inner, m.OriginalSource, m.Index, m.Length));
+                            // All types of parentheses that only have a type (and no other parameters)
+                            Stringerex.Ors(
+                                new S("(?:").Process(m => ParenthesisType.Grouping),
+                                new S("(?=").Process(m => ParenthesisType.PositiveLookAhead),
+                                new S("(?<=").Process(m => ParenthesisType.PositiveLookBehind),
+                                new S("(?!").Process(m => ParenthesisType.NegativeLookAhead),
+                                new S("(?<!").Process(m => ParenthesisType.NegativeLookBehind),
+                                new S("(?>").Process(m => ParenthesisType.Atomic),
+                                new S('(').Process(m => ParenthesisType.Capturing)
+                            )
+                                .Atomic()
+                                .ThenRaw(generex, (type, inner) => new { Type = type, Inner = inner })
+                                .Then(')')
+                                .Process(m => (Node) new ParenthesisNode(m.Result.Type, m.Result.Inner, m.OriginalSource, m.Index, m.Length)),
+
+                            // Named capturing groups
+                            new S("(?<").Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>').Atomic()
+                                .ThenRaw(generex, (groupName, inner) => new { GroupName = groupName, Inner = inner })
+                                .Then(')')
+                                .Process(m => (Node) new NamedParenthesisNode(m.Result.GroupName, m.Result.Inner, m.OriginalSource, m.Index, m.Length))
+                        );
 
                         var repeater = Stringerex.Ors(
                             new S("*?").Process(m => new { Min = 0, Max = (int?) null, Greedy = Greediness.Nongreedy, Type = RepeaterType.Star }),

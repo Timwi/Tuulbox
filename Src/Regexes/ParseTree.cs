@@ -99,11 +99,13 @@ namespace Tuulbox.Regexes
         }
     }
 
-    abstract class CharacterClass
+    abstract class CharacterClass : IEquatable<CharacterClass>
     {
         public static CharacterClass FromEscape(EscapeCode escape) { return new CharacterClassEscape(escape); }
         public static CharacterClass FromCharacter(char ch) { return new CharacterClassCharacter(ch); }
         public static CharacterClass FromTo(char from, char to) { return new CharacterClassFromTo(from, to); }
+        public abstract bool Equals(CharacterClass other);
+        public abstract override int GetHashCode();
     }
 
     sealed class CharacterClassEscape : CharacterClass
@@ -123,6 +125,14 @@ namespace Tuulbox.Regexes
             }
             return null;
         }
+        public override bool Equals(CharacterClass other)
+        {
+            return (other is CharacterClassEscape) && ((CharacterClassEscape) other).Escape == Escape;
+        }
+        public override int GetHashCode()
+        {
+            return Escape.GetHashCode();
+        }
     }
 
     sealed class CharacterClassCharacter : CharacterClass
@@ -135,6 +145,14 @@ namespace Tuulbox.Regexes
                 return Node.ControlCharactersExplain[(int) Char];
             return "the “{0}” character (U+{1:X4})".Fmt(Char, (int) Char);
         }
+        public override bool Equals(CharacterClass other)
+        {
+            return (other is CharacterClassCharacter) && ((CharacterClassCharacter) other).Char == Char;
+        }
+        public override int GetHashCode()
+        {
+            return Char.GetHashCode();
+        }
     }
 
     sealed class CharacterClassFromTo : CharacterClass
@@ -146,6 +164,14 @@ namespace Tuulbox.Regexes
         {
             return "any character between “{0}” (U+{1:X4}) and “{2}” (U+{3:X4})".Fmt(From, (int) From, To, (int) To);
         }
+        public override bool Equals(CharacterClass other)
+        {
+            return (other is CharacterClassFromTo) && ((CharacterClassFromTo) other).From == From && ((CharacterClassFromTo) other).To == To;
+        }
+        public override int GetHashCode()
+        {
+            return unchecked((int) From << 16 + (int) To);
+        }
     }
 
     sealed class CharacterClassNode : Node
@@ -154,7 +180,7 @@ namespace Tuulbox.Regexes
         public bool Negated { get; private set; }
         public CharacterClassNode(CharacterClass[] classes, bool negated, string source, int index, int length) : base(source, index, length) { Classes = classes; Negated = negated; }
         private CharacterClassNode() : base() { }
-        public override object ToHtml() { return new SPAN { class_ = "node characterclass" }.Data("info", Classes.ToJsonList(cl => cl.ToString())).Data("negated", Negated ? (object) 1 : null)._(Source); }
+        public override object ToHtml() { return new SPAN { class_ = "node characterclass" }.Data("info", Classes.Distinct().ToJsonList(cl => cl.ToString())).Data("negated", Negated ? (object) 1 : null)._(Source); }
     }
 
     sealed class AnyNode : Node
@@ -183,6 +209,7 @@ namespace Tuulbox.Regexes
 
     enum ParenthesisType
     {
+        NamedCapturing,
         Capturing,
         Grouping,
         PositiveLookAhead,
@@ -192,13 +219,21 @@ namespace Tuulbox.Regexes
         Atomic
     }
 
-    sealed class ParenthesisNode : OneChildNode
+    class ParenthesisNode : OneChildNode
     {
         public ParenthesisType Type { get; private set; }
         public ParenthesisNode(ParenthesisType type, Node child, string source, int index, int length)
             : base(child, source, index, length) { Type = type; }
         protected override string CssClass { get { return "parenthesis"; } }
         protected override Tag addData(Tag tag) { return base.addData(tag).Data("type", Type.ToString()); }
+    }
+
+    sealed class NamedParenthesisNode : ParenthesisNode
+    {
+        public string GroupName { get; private set; }
+        public NamedParenthesisNode(string name, Node child, string source, int index, int length)
+            : base(ParenthesisType.NamedCapturing, child, source, index, length) { GroupName = name; }
+        protected override Tag addData(Tag tag) { return base.addData(tag).Data("groupname", GroupName); }
     }
 
     enum RepeaterType
