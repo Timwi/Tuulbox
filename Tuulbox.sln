@@ -1,6 +1,6 @@
 
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tuulbox", "Src\Tuulbox.csproj", "{F675291C-DE5D-428C-81FB-1F84FA13D368}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Util", "..\RT.Util\Src\RT.Util.csproj", "{8D0FE79C-AD8D-475C-9E6F-9CAE85365B5D}"
@@ -12,6 +12,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KitchenSink", "..\RT.Util\Src\RT.KitchenSink.csproj", "{7EDB80B5-CA44-4AD9-BF23-18A9470FEB69}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generex", "..\..\..\Generex\Generex.csproj", "{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Propeller", "..\Propeller\Src\Propeller.csproj", "{3B02D01E-2CB9-49F3-86B9-97BF8CD161FA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PropellerApi", "..\Propeller\API\PropellerApi.csproj", "{5770EE79-8340-41FB-9B8E-EB4A3C487FF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Services", "..\RT.SelfService\Src\RT.SelfService.csproj", "{2D690226-CE76-4261-8778-87F7C213836A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,6 +49,18 @@ Global
 		{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B02D01E-2CB9-49F3-86B9-97BF8CD161FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B02D01E-2CB9-49F3-86B9-97BF8CD161FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B02D01E-2CB9-49F3-86B9-97BF8CD161FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B02D01E-2CB9-49F3-86B9-97BF8CD161FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5770EE79-8340-41FB-9B8E-EB4A3C487FF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5770EE79-8340-41FB-9B8E-EB4A3C487FF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5770EE79-8340-41FB-9B8E-EB4A3C487FF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5770EE79-8340-41FB-9B8E-EB4A3C487FF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D690226-CE76-4261-8778-87F7C213836A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D690226-CE76-4261-8778-87F7C213836A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D690226-CE76-4261-8778-87F7C213836A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D690226-CE76-4261-8778-87F7C213836A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

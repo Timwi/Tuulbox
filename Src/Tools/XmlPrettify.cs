@@ -14,7 +14,7 @@ namespace Tuulbox.Tools
     {
         bool ITuul.Enabled { get { return true; } }
         string ITuul.Name { get { return "Prettify XML"; } }
-        string ITuul.Url { get { return "/xml"; } }
+        string ITuul.UrlName { get { return "xml"; } }
         string ITuul.Keywords { get { return "xml prettify pretty format reformat readable"; } }
         string ITuul.Description { get { return "Displays XML in a more readable way."; } }
 
@@ -36,7 +36,7 @@ namespace Tuulbox.Tools
             }
             else
             {
-                return new FORM { method = method.post, action = req.Url.ToHref() }._(
+                return new FORM { method = method.post, action = req.Url.ToFull() }._(
                     new H3(Helpers.LabelWithAccessKey("XML", "x", "xml_xml")),
                     new DIV(new TEXTAREA { name = "input", id = "xml_xml" }._()),
                     new DIV(new BUTTON { type = btype.submit, accesskey = "s" }._(Helpers.TextWithAccessKey("Submit", "s")))

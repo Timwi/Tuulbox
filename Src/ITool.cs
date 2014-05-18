@@ -2,11 +2,11 @@
 
 namespace Tuulbox
 {
-    interface ITuul
+    public interface ITuul
     {
         bool Enabled { get; }
         string Name { get; }
-        string Url { get; }
+        string UrlName { get; }
         string Keywords { get; }
         string Description { get; }
         object Handle(HttpRequest req);

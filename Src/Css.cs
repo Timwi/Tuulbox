@@ -55,7 +55,7 @@ kbd.accesskey { font-family: inherit; text-decoration: underline; }
 
         bool ITuul.Enabled { get { return true; } }
         string ITuul.Name { get { return null; } }
-        string ITuul.Url { get { return "/css"; } }
+        string ITuul.UrlName { get { return "css"; } }
         string ITuul.Keywords { get { return null; } }
         string ITuul.Description { get { return null; } }
         string ITuul.Js { get { return null; } }

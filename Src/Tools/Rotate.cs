@@ -20,7 +20,7 @@ namespace Tuulbox.Tools
     {
         bool ITuul.Enabled { get { return false; } }
         string ITuul.Name { get { return "Rotate a picture"; } }
-        string ITuul.Url { get { return "/rotate"; } }
+        string ITuul.UrlName { get { return "rotate"; } }
         string ITuul.Keywords { get { return "rotate turn flip picture image photo"; } }
         string ITuul.Description { get { return "Rotates a picture you upload."; } }
         string ITuul.Js { get { return null; } }
@@ -85,7 +85,7 @@ namespace Tuulbox.Tools
             }
             else
             {
-                return new FORM { action = req.Url.ToHref(), enctype = enctype.multipart_formData, method = method.post }._(
+                return new FORM { action = req.Url.ToFull(), enctype = enctype.multipart_formData, method = method.post }._(
                     new DIV("Choose file: ", new INPUT { type = itype.file, name = "pic" }),
                     new DIV("Rotate by: ", new SELECT { name = "rot" }._(
                         new OPTION { value = "Ninety" }._("90° to the right"),

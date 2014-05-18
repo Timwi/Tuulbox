@@ -10,7 +10,7 @@ namespace Tuulbox.Tools
     {
         bool ITuul.Enabled { get { return true; } }
         string ITuul.Name { get { return "Regular expressions"; } }
-        string ITuul.Url { get { return "/regexes"; } }
+        string ITuul.UrlName { get { return "regexes"; } }
         string ITuul.Keywords { get { return "regular expressions regexes regexps regex match text pattern"; } }
         string ITuul.Description { get { return "Explains the meaning of each element in a regular expression."; } }
         string ITuul.Js { get { return _js ?? (_js = generateJs()); } }
@@ -238,7 +238,7 @@ $(function()
                 catch { invalid = true; }
             }
 
-            return new FORM { method = method.post, action = req.Url.ToHref() }._(
+            return new FORM { method = method.post, action = req.Url.ToFull() }._(
                 html,
                 new TABLE { class_ = "layout" }._(
                 //new COL(), new COL { class_ = "spacer" }, new COL(),

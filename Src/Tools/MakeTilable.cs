@@ -12,7 +12,7 @@ namespace Tuulbox.Tools
     {
         bool ITuul.Enabled { get { return false; } }
         string ITuul.Name { get { return "Make tilable background"; } }
-        string ITuul.Url { get { return "/maketilable"; } }
+        string ITuul.UrlName { get { return "maketilable"; } }
         string ITuul.Keywords { get { return "make create tilable tile background backgrounds image picture repeat seamless"; } }
         string ITuul.Description { get { return "Takes an image you upload and generates a seamlessly tilable version of it."; } }
         string ITuul.Js { get { return null; } }
@@ -42,7 +42,7 @@ namespace Tuulbox.Tools
                 }
             }
 
-            return new FORM { action = req.Url.ToHref(), enctype = enctype.multipart_formData, method = method.post }._(
+            return new FORM { action = req.Url.ToFull(), enctype = enctype.multipart_formData, method = method.post }._(
                 new DIV("Choose file: ", new INPUT { type = itype.file, name = "pic" }),
                 new DIV(new INPUT { type = itype.submit, value = "Make tilable" }),
                 new DIV("After uploading, the tilable picture will be displayed in your browser. Press Ctrl+S then to save it to your disk.")

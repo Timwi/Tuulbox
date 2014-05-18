@@ -17,7 +17,7 @@ namespace Tuulbox
 
         bool ITuul.Enabled { get { return true; } }
         string ITuul.Name { get { return null; } }
-        string ITuul.Url { get { return "/js"; } }
+        string ITuul.UrlName { get { return "js"; } }
         string ITuul.Keywords { get { return null; } }
         string ITuul.Description { get { return null; } }
         string ITuul.Js { get { return null; } }

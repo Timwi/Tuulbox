@@ -12,7 +12,7 @@ namespace Tuulbox.Tools
     {
         bool ITuul.Enabled { get { return true; } }
         string ITuul.Name { get { return "List of all tuuls"; } }
-        string ITuul.Url { get { return "/list"; } }
+        string ITuul.UrlName { get { return null; } }
         string ITuul.Keywords { get { return "complete list all tuuls"; } }
         string ITuul.Description { get { return "Shows a list of all the tuuls available in the Tuulbox."; } }
         string ITuul.Js { get { return null; } }
@@ -21,8 +21,8 @@ namespace Tuulbox.Tools
         object ITuul.Handle(HttpRequest req)
         {
             return new UL(
-                Program.Tuuls.Where(tuul => tuul != this && tuul.Name != null).OrderBy(tuul => tuul.Name).Select(tuul => new LI(
-                    new DIV { class_ = "tuulname" }._(new A { href = req.Url.WithPathParent().WithPathOnly(tuul.Url).ToHref() }._(tuul.Name)),
+                TuulboxModule.Tuuls.Where(tuul => tuul != this && tuul.Name != null).OrderBy(tuul => tuul.Name).Select(tuul => new LI(
+                    new DIV { class_ = "tuulname" }._(new A { href = req.Url.WithDomainParent().WithDomain(tuul.UrlName == null ? "" : tuul.UrlName + ".").ToFull() }._(tuul.Name)),
                     new DIV { class_ = "explain" }._(tuul.Description)
                 ))
             );

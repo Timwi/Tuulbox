@@ -10,11 +10,20 @@ namespace Tuulbox.Tools
     {
         bool ITuul.Enabled { get { return true; } }
         string ITuul.Name { get { return "Base-64 encoder/decoder"; } }
-        string ITuul.Url { get { return "/base64"; } }
+        string ITuul.UrlName { get { return "base64"; } }
         string ITuul.Keywords { get { return "base 64 base64 base-64 encode decode encoder decoder transcoder converter"; } }
         string ITuul.Description { get { return "Converts text you provide to and from base-64."; } }
         string ITuul.Js { get { return null; } }
-        string ITuul.Css { get { return null; } }
+        string ITuul.Css
+        {
+            get
+            {
+                return @"
+                    col { width: 50%; }
+                    col.spacer { width: 1em; }
+                ";
+            }
+        }
 
         object ITuul.Handle(HttpRequest req)
         {
@@ -36,7 +45,7 @@ namespace Tuulbox.Tools
             }
 
             return Ut.NewArray<object>(
-                new FORM { action = req.Url.ToHref(), method = method.post }._(
+                new FORM { action = req.Url.ToFull(), method = method.post }._(
                     new H3("Text to encode/decode"),
                     new DIV(new TEXTAREA { name = "input" }._(input)),
                     new DIV(new INPUT { type = itype.submit, value = "Go for it" })
