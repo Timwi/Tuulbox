@@ -18,7 +18,7 @@ namespace Tuulbox.Tools
         string ITuul.Js { get { return null; } }
         string ITuul.Css { get { return null; } }
 
-        object ITuul.Handle(HttpRequest req)
+        object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             if (req.Method == HttpMethod.Post)
             {

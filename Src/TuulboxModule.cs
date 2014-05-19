@@ -23,14 +23,14 @@ namespace Tuulbox
         {
             get
             {
-                return _resolverCache ?? (_resolverCache = new UrlResolver(Tuuls.SelectMany(generateHooks)));
+                return _resolverCache ?? (_resolverCache = new UrlResolver(Tuuls.Select(generateUrlMapping)));
             }
         }
 
-        private IEnumerable<UrlMapping> generateHooks(ITuul tuul)
+        private UrlMapping generateUrlMapping(ITuul tuul)
         {
-            var subdomain = tuul.UrlName == null ? "" : tuul.UrlName + ".";
-            yield return new UrlMapping(domain: subdomain, specificDomain: true, handler: req => handle(req, tuul));
+            var resolver = new UrlResolver();
+            resolver.Add(new UrlHook("", Settings.UseDomain, specific: true), handler: req => handle(req, tuul));
             var js = tuul.Js;
             if (js != null)
             {
@@ -39,14 +39,16 @@ namespace Tuulbox
                 /*/
                 var jsBytes = js.ToUtf8();
                 /**/
-                yield return new UrlMapping(domain: "js." + subdomain, specificDomain: true, handler: req => HttpResponse.JavaScript(jsBytes));
+                resolver.Add(new UrlHook("js", Settings.UseDomain, specific: true), handler: req => HttpResponse.JavaScript(jsBytes));
             }
             var css = tuul.Css;
             if (css != null)
             {
                 var cssBytes = css.ToUtf8();
-                yield return new UrlMapping(domain: "css." + subdomain, specificDomain: true, handler: req => HttpResponse.Css(cssBytes));
+                resolver.Add(new UrlHook("css", Settings.UseDomain, specific: true), handler: req => HttpResponse.Css(cssBytes));
             }
+
+            return new UrlMapping(new UrlHook(tuul.UrlName ?? "", Settings.UseDomain), resolver.Handle);
         }
 
         private static IEnumerable<ITuul> getTools()

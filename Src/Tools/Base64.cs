@@ -25,7 +25,7 @@ namespace Tuulbox.Tools
             }
         }
 
-        object ITuul.Handle(HttpRequest req)
+        object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             string input = null;
             object encoded = null;
@@ -47,8 +47,8 @@ namespace Tuulbox.Tools
             return Ut.NewArray<object>(
                 new FORM { action = req.Url.ToFull(), method = method.post }._(
                     new H3("Text to encode/decode"),
-                    new DIV(new TEXTAREA { name = "input" }._(input)),
-                    new DIV(new INPUT { type = itype.submit, value = "Go for it" })
+                    new DIV(new TEXTAREA { name = "input", accesskey = "," }._(input)),
+                    new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(Helpers.TextWithAccessKey("Go for it", "g")))
                 ),
 
                 encoded != null || decoded != null ? new H3("Result") : null,

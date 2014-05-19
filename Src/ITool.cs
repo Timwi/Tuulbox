@@ -9,7 +9,7 @@ namespace Tuulbox
         string UrlName { get; }
         string Keywords { get; }
         string Description { get; }
-        object Handle(HttpRequest req);
+        object Handle(TuulboxModule module, HttpRequest req);
         string Js { get; }
         string Css { get; }
     }

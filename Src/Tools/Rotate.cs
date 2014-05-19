@@ -28,7 +28,7 @@ namespace Tuulbox.Tools
 
         static RotateMethod[] _allowed = new[] { RotateMethod.Ninety, RotateMethod.OneEighty, RotateMethod.TwoSeventy };
 
-        object ITuul.Handle(HttpRequest req)
+        object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             if (req.Method == HttpMethod.Post)
             {

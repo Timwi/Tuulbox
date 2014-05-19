@@ -6,28 +6,28 @@ namespace Tuulbox
 {
     partial class TuulboxModule
     {
-        static HttpResponse handle(HttpRequest req, ITuul tuul)
+        HttpResponse handle(HttpRequest req, ITuul tuul)
         {
-            var content = tuul.Handle(req);
+            var content = tuul.Handle(this, req);
             if (content is HttpResponse)
                 return (HttpResponse) content;
 
             return HttpResponse.Html(new HTML(
                 new HEAD(
                     new TITLE(tuul.Name),
-                    new LINK { rel = "stylesheet", type = "text/css", href = req.Url.WithDomainParent().WithDomain("css.").ToFull() },
-                    tuul.Css.NullOr(css => new LINK { rel = "stylesheet", type = "text/css", href = req.Url.WithDomain("css.").ToFull() }),
+                    new LINK { rel = "stylesheet", type = "text/css", href = req.Url.WithParents(2, "css", Settings.UseDomain).ToFull() },
+                    tuul.Css.NullOr(css => new LINK { rel = "stylesheet", type = "text/css", href = req.Url.WithParent("css", Settings.UseDomain).ToFull() }),
                     new SCRIPT { src = "http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js" },
                     new SCRIPT { src = "http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.0/jquery-ui.min.js" },
-                    new SCRIPT { src = req.Url.WithDomainParent().WithDomain("js.").ToFull() },
-                    tuul.Js.NullOr(js => new SCRIPT { src = req.Url.WithDomain("js.").ToFull() })
+                    new SCRIPT { src = req.Url.WithParents(2, "js", Settings.UseDomain).ToFull() },
+                    tuul.Js.NullOr(js => new SCRIPT { src = req.Url.WithParent("js", Settings.UseDomain).ToFull() })
                 ),
                 new BODY(
                     new DIV { class_ = "everything" }._(
                         new DIV { class_ = "search" }._(
                 //new H2("Find a tuul:"),
                 //new DIV(new INPUT { type = itype.text }),
-                            new DIV(new A { href = req.Url.WithDomainParent().WithDomain("").ToFull() }._("List of all tuuls"))
+                            new DIV(new A { href = req.Url.WithParents(2, "", Settings.UseDomain).ToFull() }._("List of all tuuls"))
                         ),
                         new H1("Tuulbox"),
                         new DIV { class_ = "content" }._(

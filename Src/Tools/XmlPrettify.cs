@@ -18,7 +18,7 @@ namespace Tuulbox.Tools
         string ITuul.Keywords { get { return "xml prettify pretty format reformat readable"; } }
         string ITuul.Description { get { return "Displays XML in a more readable way."; } }
 
-        object ITuul.Handle(HttpRequest req)
+        object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             if (req.Method == HttpMethod.Post)
             {
@@ -38,8 +38,8 @@ namespace Tuulbox.Tools
             {
                 return new FORM { method = method.post, action = req.Url.ToFull() }._(
                     new H3(Helpers.LabelWithAccessKey("XML", "x", "xml_xml")),
-                    new DIV(new TEXTAREA { name = "input", id = "xml_xml" }._()),
-                    new DIV(new BUTTON { type = btype.submit, accesskey = "s" }._(Helpers.TextWithAccessKey("Submit", "s")))
+                    new DIV(new TEXTAREA { name = "input", id = "xml_xml", accesskey = "," }._()),
+                    new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(Helpers.TextWithAccessKey("Go for it", "g")))
                 );
             }
         }

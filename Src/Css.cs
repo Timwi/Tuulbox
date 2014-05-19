@@ -48,7 +48,7 @@ table.layout th, table.layout td { vertical-align: top; }
 kbd.accesskey { font-family: inherit; text-decoration: underline; }
 ".ToUtf8();
 
-        object ITuul.Handle(HttpRequest req)
+        object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             return HttpResponse.Css(_css);
         }

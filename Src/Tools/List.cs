@@ -18,11 +18,11 @@ namespace Tuulbox.Tools
         string ITuul.Js { get { return null; } }
         string ITuul.Css { get { return null; } }
 
-        object ITuul.Handle(HttpRequest req)
+        object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             return new UL(
                 TuulboxModule.Tuuls.Where(tuul => tuul != this && tuul.Name != null).OrderBy(tuul => tuul.Name).Select(tuul => new LI(
-                    new DIV { class_ = "tuulname" }._(new A { href = req.Url.WithDomainParent().WithDomain(tuul.UrlName == null ? "" : tuul.UrlName + ".").ToFull() }._(tuul.Name)),
+                    new DIV { class_ = "tuulname" }._(new A { href = req.Url.WithParents(2, tuul.UrlName, module.Settings.UseDomain).ToFull() }._(tuul.Name)),
                     new DIV { class_ = "explain" }._(tuul.Description)
                 ))
             );

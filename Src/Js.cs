@@ -10,7 +10,7 @@ namespace Tuulbox
 // No site-global JavaScript yet!
 ").ToUtf8();
 
-        object ITuul.Handle(HttpRequest req)
+        object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             return HttpResponse.JavaScript(_js);
         }

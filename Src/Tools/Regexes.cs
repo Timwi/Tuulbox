@@ -94,8 +94,8 @@ $(function()
                 case 'NonSpaceCharacter': return '<h3>Non-space character</h3><p>Matches any character that is not a space character (which includes the tab, the em space, etc.).</p>';
                 case 'WordCharacter': return '<h3>Word character</h3><p>Matches any word character, which includes letters, digits, and connector punctuation (e.g. the underscore, U+005F).</p>';
                 case 'NonWordCharacter': return '<h3>Non-word character</h3><p>Matches any character that is not a word character (which includes letters, digits, and connector punctuation such as the underscore, U+005F).</p>';
-                case 'EndOfStringAlmost': return '<h3>End of string</h3><p>Matches either at the end of the entire input string, or before a <code>\\n</code> (newline) character at the end of the entire input string, irrespective of the multi-line setting.</p>';
-                case 'EndOfStringReally': return '<h3>End of string only</h3><p>Matches only at the end of the entire input string, irrespective of the multi-line setting.</p>';
+                case 'EndOfStringAlmost': return '<h3>End of string</h3><p>Matches either at the end of the entire input string, or before a <code>\\n</code> (newline) character at the end of the entire input string, irrespective of the multi-line setting.</p><p>To match only the end of the string, use <code>\\Z</code> (upper-case Z).</p>';
+                case 'EndOfStringReally': return '<h3>End of string only</h3><p>Matches only at the end of the entire input string, irrespective of the multi-line setting.</p><p>To also match before a <code>\\n</code> (newline) character at the end of the input string, use <code>\\z</code> (lower-case z).</p>';
             }
         }],
 
@@ -200,7 +200,7 @@ $(function()
 ";
         }
 
-        object ITuul.Handle(HttpRequest req)
+        object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             string regex = null, input = null;
             bool single = true, multi = false, ignoreCase = false, ignoreWhitespace = false;
@@ -245,7 +245,7 @@ $(function()
                     new TR(
                         new TD(
                             new H3(Helpers.LabelWithAccessKey("Regular expression", "r", "regex_regex")),
-                            new DIV(new TEXTAREA { name = "regex", id = "regex_regex" }._(regex))
+                            new DIV(new TEXTAREA { name = "regex", id = "regex_regex", accesskey = "," }._(regex))
                 //),
                 //new TD(),
                 //new TD(
