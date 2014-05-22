@@ -19,6 +19,7 @@ namespace Tuulbox.Tools
     sealed class Rotate : ITuul
     {
         bool ITuul.Enabled { get { return false; } }
+        bool ITuul.Listed { get { return false; } }
         string ITuul.Name { get { return "Rotate a picture"; } }
         string ITuul.UrlName { get { return "rotate"; } }
         string ITuul.Keywords { get { return "rotate turn flip picture image photo"; } }

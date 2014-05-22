@@ -34,6 +34,9 @@ namespace Tuulbox
                             new H2(tuul.Name),
                             content
                         )
+                    ),
+                    Settings.Impressum == null ? null : new DIV { class_ = "footer" }._(
+                        new A { href = req.Url.WithParents(2, "impressum", Settings.UseDomain).ToFull() }._("Impressum")
                     )
                 )
             ));

@@ -15,5 +15,8 @@ namespace Tuulbox
         ///     Depending on the value of <see cref="UseDomain"/>, either the base domain (e.g. <c>tuulbox.com</c>) or the
         ///     base path (e.g. <c>/tuulbox</c>, or the empty string).</summary>
         public string BaseDomainOrPath = "";
+
+        /// <summary>Specifies the information to be displayed in the Impressum, or <c>null</c> to disable the Impressum entirely.</summary>
+        public string[] Impressum = null;
     }
 }

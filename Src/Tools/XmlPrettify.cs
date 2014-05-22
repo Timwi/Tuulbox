@@ -1,22 +1,23 @@
 ﻿using System;
-using RT.Util.ExtensionMethods;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using RT.Servers;
 using RT.TagSoup;
 using RT.Util;
+using RT.Util.ExtensionMethods;
 
 namespace Tuulbox.Tools
 {
     public sealed class XmlPrettify : ITuul
     {
         bool ITuul.Enabled { get { return true; } }
+        bool ITuul.Listed { get { return true; } }
         string ITuul.Name { get { return "Prettify XML"; } }
         string ITuul.UrlName { get { return "xml"; } }
-        string ITuul.Keywords { get { return "xml prettify pretty format reformat readable"; } }
-        string ITuul.Description { get { return "Displays XML in a more readable way."; } }
+        string ITuul.Keywords { get { return "xml prettify pretty format reformat readable browse browsable"; } }
+        string ITuul.Description { get { return "Displays XML in a readable, browsable way."; } }
 
         object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
@@ -24,7 +25,12 @@ namespace Tuulbox.Tools
             {
                 try
                 {
-                    return new XmlHtmlifier(XDocument.Parse(req.Post["input"].Value).Root).Html;
+                    var rootElement = XDocument.Parse(req.Post["input"].Value).Root;
+                    return Ut.NewArray<object>(
+                        new H3("Browsable"),
+                        new XmlHtmlifier(rootElement).Html,
+                        new H3("Beautified"),
+                        new PRE(new Func<object>(() => rootElement.ToString())));
                 }
                 catch (Exception e)
                 {
@@ -64,8 +70,24 @@ namespace Tuulbox.Tools
 
             private IEnumerable<object> htmlify(XElement elem)
             {
-                var c = _counter;
-                _counter++;
+                var anyContent = elem.Nodes().Any();
+                var trivialContent = false;
+                var firstTwoNodes = elem.Nodes().Take(2).ToArray();
+                string trivialText = null;
+                if (firstTwoNodes.Length == 1 && firstTwoNodes[0] is XText)
+                {
+                    trivialText = ((XText) firstTwoNodes[0]).Value;
+                    if (Regex.IsMatch(trivialText, @"^[ \r\n]*([^\r\n]*)[ \r\n]*$", RegexOptions.Singleline))
+                    {
+                        trivialContent = true;
+                        trivialText = trivialText.Trim();
+                        ((XText) firstTwoNodes[0]).Value = trivialText;
+                    }
+                }
+                int? c = null;
+                if (anyContent && !trivialContent)
+                    c = _counter++;
+
                 yield return new DIV { class_ = "tag" }.Data("c", c)._(
                     new SPAN { class_ = "anglebrackets" }._("<"),
                     new SPAN { class_ = "tagname" }._(stringifyXName(elem.Name)),
@@ -74,18 +96,34 @@ namespace Tuulbox.Tools
                         new TABLE { class_ = "attributes" }._(
                             elem.Attributes().Select(attr => new TR(
                                 new TH { class_ = "attributename" }._(stringifyXName(attr.Name)),
+                                new TD { class_ = "equals" }._("="),
                                 new TD { class_ = "attributevalue" }._(attr.Value)
                             ))
                         )
                     ),
-                    new SPAN { class_ = "anglebrackets" }._(">")
+                    new SPAN { class_ = "anglebrackets" }._(anyContent ? ">" : "/>"),
+                    trivialContent
+                        ? (object) new SPAN { class_ = "trivial text" }._(trivialText)
+                        : anyContent
+                            ? Ut.NewArray<object>(
+                                new SPAN { class_ = "tagcollapsed", id = "o" + c }._(" ... "),
+                                new BLOCKQUOTE { class_ = "tagcontents", id = "c" + c, style = "display:none" }._(elem.Nodes().Select(node => node.IfType(
+                                    (XElement subElem) => htmlify(subElem),
+                                    (XText text) =>
+                                    {
+                                        var newValue = text.Value.RemoveCommonIndentation().TrimStart('\r', '\n').TrimEnd();
+                                        text.Value = newValue;
+                                        return new SPAN { class_ = "text" }._(newValue);
+                                    },
+                                    (XAttribute attr) => (object) null,
+                                    @elseObj => null))))
+                            : null,
+                    anyContent ? Ut.NewArray(
+                        new SPAN { class_ = "anglebrackets" }._("</"),
+                        new SPAN { class_ = "tagname" }._(stringifyXName(elem.Name)),
+                        new SPAN { class_ = "anglebrackets" }._(">")
+                    ) : null
                 );
-                if (elem.Nodes().Any())
-                    yield return new BLOCKQUOTE { class_ = "tagcontents", id = "c" + c }._(elem.Nodes().Select(node => node.IfType(
-                        (XElement subElem) => htmlify(subElem),
-                        (XText text) => (object) new SPAN { class_ = "text" }._(text),
-                        (XAttribute attr) => null,
-                        @elseObj => null)));
             }
 
             public object Html { get { return _cache ?? (_cache = htmlify(_elem)); } }
@@ -97,35 +135,36 @@ namespace Tuulbox.Tools
             {
                 return @"
                     $(function() {
-                        var open = window.location.hash.substr(1).split(',').reduce(function(p, n) { p[n] = true; return p; }, {});
+                        var open = window.location.hash.substr(1).split(',').reduce(function(p, n) { if (n.length) p[n] = true; return p; }, {});
                         $('.tag').each(function() {
                             var t = $(this);
                             var c = t.data('c');
-                            var i = $('#c' + c);
-                            if (i.length) {
-                                i.hide();
-                                var btn = $(""<a href='#' class='button'>"").text('+');
-                                var on = open[c] || false;
-                                var set = function() {
-                                    if (on) {
-                                        i.show();
-                                        btn.text('−');
-                                        open[c] = true;
-                                    } else {
-                                        i.hide();
-                                        btn.text('+');
-                                        delete open[c];
-                                    }
-                                };
-                                btn.click(function() {
-                                    on = !on;
-                                    set();
-                                    window.location.hash = '#' + Object.keys(open).join(',');
-                                    return false;
-                                });
+                            if (c === void(0))
+                                return;
+                            var i = $('#c' + c).hide();
+                            var o = $('#o' + c);
+                            var btn = $(""<a href='#' class='button'>"").text('+').prependTo(t);
+                            var on = open[c] || false;
+                            var set = function() {
+                                if (on) {
+                                    i.show();
+                                    o.hide();
+                                    btn.text('−');
+                                    open[c] = true;
+                                } else {
+                                    i.hide();
+                                    o.show();
+                                    btn.text('+');
+                                    delete open[c];
+                                }
+                            };
+                            btn.click(function() {
+                                on = !on;
                                 set();
-                                t.prepend(btn);
-                            }
+                                window.location.hash = '#' + Object.keys(open).join(',');
+                                return false;
+                            });
+                            set();
                         });
                     });
                 ";
@@ -137,15 +176,18 @@ namespace Tuulbox.Tools
             get
             {
                 return @"
-                    .tag { font-size: 15pt; background: #eef6ff; margin: .2em 0; position: relative; }
+                    .tag { font-size: 15pt; margin: .2em 0; position: relative; white-space: nowrap; }
                     .tagname { color: #00f; }
                     .attributes { display: inline-table; vertical-align: top; font-size: 12pt; }
                     .button { font-size: 9pt; border: 1px solid #888; border-radius: 1em; padding: 0 .5em; text-decoration: none; position: absolute; right: 100%; top: .4em; margin-right: .7em; }
                     .attributes td, .attributes th { vertical-align: top; padding: 0; }
-                    .attributes th.attributename { font-weight: bold; color: #080; text-align: right; padding: 0 .7em; }
+                    .attributes th.attributename { font-weight: bold; color: #080; text-align: right; }
+                    .attributes td.equals { padding: 0 .1em; }
                     .attributes td.attributevalue { font-style: italic; color: #880; }
-                    blockquote { margin: 0 0 0 3em; }
-                    .text { background: #ddeeff; padding: .1em .3em; border: 1px solid #bbddff; white-space: pre; }
+                    blockquote { margin: 0 0 0 1.5em; }
+                    .text { white-space: pre-line; }
+                    .trivial { padding: 0 .25em; }
+                    pre { border: 1px dashed #2288ff; background: #eef6ff; padding: .5em 1em; }
                 ";
             }
         }

@@ -9,6 +9,7 @@ namespace Tuulbox.Tools
     sealed class Base64 : ITuul
     {
         bool ITuul.Enabled { get { return true; } }
+        bool ITuul.Listed { get { return true; } }
         string ITuul.Name { get { return "Base-64 encoder/decoder"; } }
         string ITuul.UrlName { get { return "base64"; } }
         string ITuul.Keywords { get { return "base 64 base64 base-64 encode decode encoder decoder transcoder converter"; } }

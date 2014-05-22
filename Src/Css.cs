@@ -20,6 +20,10 @@ body {
     padding: 3em;
     border-radius: 7px;
 }
+.footer {
+    padding: .5em;
+    text-align: center;
+}
 h1 {
     font-variant: small-caps;
     font-size: 47pt;
@@ -54,6 +58,7 @@ kbd.accesskey { font-family: inherit; text-decoration: underline; }
         }
 
         bool ITuul.Enabled { get { return true; } }
+        bool ITuul.Listed { get { return false; } }
         string ITuul.Name { get { return null; } }
         string ITuul.UrlName { get { return "css"; } }
         string ITuul.Keywords { get { return null; } }

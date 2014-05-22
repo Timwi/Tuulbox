@@ -11,6 +11,7 @@ namespace Tuulbox.Tools
     sealed class MakeTilable : ITuul
     {
         bool ITuul.Enabled { get { return false; } }
+        bool ITuul.Listed { get { return false; } }
         string ITuul.Name { get { return "Make tilable background"; } }
         string ITuul.UrlName { get { return "maketilable"; } }
         string ITuul.Keywords { get { return "make create tilable tile background backgrounds image picture repeat seamless"; } }

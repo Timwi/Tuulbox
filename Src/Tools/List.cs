@@ -11,6 +11,7 @@ namespace Tuulbox.Tools
     sealed class ListAllTools : ITuul
     {
         bool ITuul.Enabled { get { return true; } }
+        bool ITuul.Listed { get { return false; } }
         string ITuul.Name { get { return "List of all tuuls"; } }
         string ITuul.UrlName { get { return null; } }
         string ITuul.Keywords { get { return "complete list all tuuls"; } }
@@ -21,7 +22,7 @@ namespace Tuulbox.Tools
         object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
             return new UL(
-                TuulboxModule.Tuuls.Where(tuul => tuul != this && tuul.Name != null).OrderBy(tuul => tuul.Name).Select(tuul => new LI(
+                TuulboxModule.Tuuls.Where(tuul => tuul.Listed).OrderBy(tuul => tuul.Name).Select(tuul => new LI(
                     new DIV { class_ = "tuulname" }._(new A { href = req.Url.WithParents(2, tuul.UrlName, module.Settings.UseDomain).ToFull() }._(tuul.Name)),
                     new DIV { class_ = "explain" }._(tuul.Description)
                 ))

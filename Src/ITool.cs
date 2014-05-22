@@ -5,6 +5,7 @@ namespace Tuulbox
     public interface ITuul
     {
         bool Enabled { get; }
+        bool Listed { get; }
         string Name { get; }
         string UrlName { get; }
         string Keywords { get; }

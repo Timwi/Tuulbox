@@ -34,11 +34,11 @@ namespace Tuulbox
             var js = tuul.Js;
             if (js != null)
             {
-                //*
-                var jsBytes = JsonValue.Fmt(js).ToUtf8();
-                /*/
+#if DEBUG
                 var jsBytes = js.ToUtf8();
-                /**/
+#else
+                var jsBytes = JsonValue.Fmt(js).ToUtf8();
+#endif
                 resolver.Add(new UrlHook("js", Settings.UseDomain, specific: true), handler: req => HttpResponse.JavaScript(jsBytes));
             }
             var css = tuul.Css;

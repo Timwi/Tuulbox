@@ -9,6 +9,7 @@ namespace Tuulbox.Tools
     sealed class RegexesTool : ITuul
     {
         bool ITuul.Enabled { get { return true; } }
+        bool ITuul.Listed { get { return true; } }
         string ITuul.Name { get { return "Regular expressions"; } }
         string ITuul.UrlName { get { return "regexes"; } }
         string ITuul.Keywords { get { return "regular expressions regexes regexps regex match text pattern"; } }
