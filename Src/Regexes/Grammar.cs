@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Linq;
 using RT.Generexes;
+using RT.TagSoup;
+using RT.Util;
+using RT.Util.ExtensionMethods;
 
 using S = RT.Generexes.Stringerex;
 using SN = RT.Generexes.Stringerex<Tuulbox.Regexes.Node>;
@@ -27,15 +30,21 @@ namespace Tuulbox.Regexes
                         var escapeCodeChar = Stringerex.Ors(
                             new S(ch => ch >= '{' || @"!""#$%&'()*+,-./:;<=>?@[\]^_`".Contains(ch)).Process(m => m.Match[0]),
                             new S('a').Process(m => '\a'),
-                            new S('c').Then(ch => ch >= 'A' && ch <= 'Z').Process(m => ((char) (m.Match[1] - 'A' + 1))),
+                            new S('c')
+                                .Then(Stringerex.Expect(ch => ch >= 'A' && ch <= 'Z', m => new ParseException(m.Index + m.Length, new P(new CODE(@"\c"), " must be followed by a capital letter between A and Z."))))
+                                .Process(m => ((char) (m.Match[1] - 'A' + 1))),
                             new S('e').Process(m => '\x1B'),
                             new S('f').Process(m => '\f'),
                             new S('n').Process(m => '\n'),
                             new S('r').Process(m => '\r'),
                             new S('t').Process(m => '\t'),
                             new S('v').Process(m => '\v'),
-                            new S('x').Then(hexDigit.Times(2).Process(m => (char) Convert.ToInt32(m.Match, 16))),
-                            new S('u').Then(hexDigit.Times(4).Process(m => (char) Convert.ToInt32(m.Match, 16))),
+                            new S('x')
+                                .Then(Stringerex.Expect(hexDigit.Times(2), m => new ParseException(m.Index + m.Length, new P(new CODE(@"\x"), " must be followed by two hexadecimal digits."))))
+                                .Process(m => (char) Convert.ToInt32(m.Match, 16)),
+                            new S('u')
+                                .Then(Stringerex.Expect(hexDigit.Times(4), m => new ParseException(m.Index + m.Length, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))))
+                                .Process(m => (char) Convert.ToInt32(m.Match, 16)),
                             new S(ch => ch >= '0' && ch <= '7').RepeatGreedy(1, 3).Process(m => (char) Convert.ToInt32(m.Match, 8)));
 
                         var escapeCodeGroup = Stringerex.Ors(
@@ -46,29 +55,43 @@ namespace Tuulbox.Regexes
                             new S('w').Process(m => EscapeCode.WordCharacter),
                             new S('W').Process(m => EscapeCode.NonWordCharacter));
 
-                        var escapeOutsideCharacterClass = Stringerex.Ors(
-                            new S('\\').Then(escapeCodeChar).Atomic().Process(m => (Node) new EscapedLiteralNode(m.Result.ToString(), m.OriginalSource, m.Index, m.Length)),
-                            new S(@"\Q").Then(S.Any.Repeat().Process(m => m.Match)).Then(@"\E").Atomic().Process(m => (Node) new LiteralNode(m.Result, m.OriginalSource, m.Index, m.Length, isQE: true)),
-                            new S('\\').Then(Stringerex.Ors(
-                                new S('A').Process(m => EscapeCode.BeginningOfString),
-                                new S('b').Process(m => EscapeCode.WordBoundary),
-                                new S('B').Process(m => EscapeCode.NonWordBoundary),
-                                new S('z').Process(m => EscapeCode.EndOfStringAlmost),
-                                new S('Z').Process(m => EscapeCode.EndOfStringReally),
-                                escapeCodeGroup
-                            )).Process(m => (Node) new EscapeCodeNode(m.Result, m.OriginalSource, m.Index, m.Length)),
-                            new S(@"\k<").Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>').Atomic().Process(m => (Node) new NamedBackreference(m.Result, m.OriginalSource, m.Index, m.Length))
-                        ).Atomic();
+                        var backslash = new S('\\');
+                        var escapeOutsideCharacterClass = backslash.Then(Stringerex.Expect(
+                            Stringerex.Ors(
+                                escapeCodeChar.Process(m => new Func<int, int, Node>((index, length) => new EscapedLiteralNode(m.Result.ToString(), m.OriginalSource, index, length))),
+                                Stringerex.Ors(
+                                    new S('A').Process(m => EscapeCode.BeginningOfString),
+                                    new S('b').Process(m => EscapeCode.WordBoundary),
+                                    new S('B').Process(m => EscapeCode.NonWordBoundary),
+                                    new S('z').Process(m => EscapeCode.EndOfStringAlmost),
+                                    new S('Z').Process(m => EscapeCode.EndOfStringReally),
+                                    escapeCodeGroup
+                                ).Process(m => new Func<int, int, Node>((index, length) => new EscapeCodeNode(m.Result, m.OriginalSource, index, length))),
+                                new S('Q')
+                                    .Then(Stringerex.Expect(S.Any.Repeat().Process(m => m.Match).Then(@"\E").Atomic(), m => new ParseException(m.Index + m.Length, new P("The ", new CODE(@"\Q"), " escape code introduces a literal that must be terminated with ", new CODE(@"\E"), "."))))
+                                    .Process(m => new Func<int, int, Node>((index, length) => new LiteralNode(m.Result, m.OriginalSource, index, length, isQE: true))),
+                                new S('k')
+                                    .Then(Stringerex.Expect(new S('<').Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>'), m => new ParseException(m.Index + m.Length, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ", where the name must consist of letters and digits and start with a letter."))))
+                                    .Process(m => new Func<int, int, Node>((index, length) => new NamedBackreference(m.Result, m.OriginalSource, index, length)))
+                            ),
+                            m => new ParseException(m.Index + m.Length, new P("Unrecognized escape code. I know about: ", "acefnrtvxudDsSwWAbBzZQk".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
+                        )).Process(m => m.Result(m.Index, m.Length));
 
                         // In a character class, \b means “backspace character”
-                        var escapeInCharacterClass = new S('\\').Then(escapeCodeChar.Or(new S('b').Process(m => '\b'))).Atomic();
+                        var charEscapeInCharacterClass = escapeCodeChar.Or(new S('b').Process(m => '\b'));
+                        var escapeInCharacterClass = backslash.Then(Stringerex.Expect(
+                            Stringerex.Ors(
+                                charEscapeInCharacterClass.Process(m => CharacterClass.FromCharacter(m.Result)),
+                                escapeCodeGroup.Process(m => CharacterClass.FromEscape(m.Result))
+                            ), m => new ParseException(m.Index + m.Length, new P("Unrecognized escape code. Inside of character classes, I know about: ", "acefnrtvxudDsSwWb".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
+                        ));
 
                         var characterClassInner =
                             // Accept a close-square-bracket at the beginning of the character class (e.g., []] is a valid class that matches ']').
                             Stringerex.Ors(
 
                                 // Character range starting with a ']'
-                                new S("]-").Then(escapeInCharacterClass.Or(S.Not(']', '\\').Process(m => m.Match[0])).Process(m => CharacterClass.FromTo(']', m.Result))),
+                                new S("]-").Then(backslash.Then(charEscapeInCharacterClass).Or(S.Not(']', '\\').Process(m => m.Match[0])).Process(m => CharacterClass.FromTo(']', m.Result))),
 
                                 // Just a ']'
                                 new S(']').Process(c => CharacterClass.FromCharacter(']')))
@@ -76,22 +99,19 @@ namespace Tuulbox.Regexes
                             .ThenRaw(Stringerex.Ors(
 
                                 // Character ranges
-                                S.Not('-', '\\').Process(m => m.Match[0]).Or(escapeInCharacterClass)
+                                backslash.Then(charEscapeInCharacterClass).Or(S.Not('-', '\\').Process(m => m.Match[0]))
                                     .Then('-')
-                                    .ThenRaw(S.Not(']', '\\').Process(m => m.Match[0]).Or(escapeInCharacterClass),
+                                    .ThenRaw(backslash.Then(charEscapeInCharacterClass).Or(S.Not(']', '\\').Process(m => m.Match[0])),
                                         (from, to) => CharacterClass.FromTo(from, to)),
 
-                                // Escape codes for single characters
-                                escapeInCharacterClass.Process(m => CharacterClass.FromCharacter(m.Result)),
-
-                                // Escape codes for character classes
-                                new S('\\').Then(escapeCodeGroup).Process(m => CharacterClass.FromEscape(m.Result)),
+                                // Escape codes
+                                escapeInCharacterClass,
 
                                 // Anything else is a literal character.
-                                S.Not('\\', ']').Process(m => CharacterClass.FromCharacter(m.Match[0]))
+                                S.Not(']').Process(m => CharacterClass.FromCharacter(m.Match[0]))
 
-                            ).Repeat(), Enumerable.Concat)
-                            .Then(']')
+                            ).RepeatGreedy(), Enumerable.Concat)
+                            .Then(S.Expect(']', m => new ParseException(m.Index + m.Length, new P("You need to terminate this character class with a ", new CODE("]"), "."))))
                             .Atomic();
                         var characterClass = Stringerex.Ors(
                             new S("[^").Then(characterClassInner).Process(m => (Node) new CharacterClassNode(m.Result.ToArray(), true, m.OriginalSource, m.Index, m.Length)),
@@ -129,10 +149,25 @@ namespace Tuulbox.Regexes
                             Stringerex.Ors(
                                 new S("(?:").Process(m => ParenthesisType.Grouping),
                                 new S("(?=").Process(m => ParenthesisType.PositiveLookAhead),
-                                new S("(?<=").Process(m => ParenthesisType.PositiveLookBehind),
                                 new S("(?!").Process(m => ParenthesisType.NegativeLookAhead),
+                                new S("(?<=").Process(m => ParenthesisType.PositiveLookBehind),
                                 new S("(?<!").Process(m => ParenthesisType.NegativeLookBehind),
                                 new S("(?>").Process(m => ParenthesisType.Atomic),
+                                new S("(?").Do(m =>
+                                {
+                                    throw new ParseException(m.Index + m.Length, Ut.NewArray<object>(
+                                        new P("This construct is not valid. Valid constructs beginning with ", new CODE("(?"), " are:"),
+                                        new UL(
+                                            new LI("Named capturing groups: ", new CODE("(?<name>...)"), " (name must consist of letters and digits and start with a letter)"),
+                                            new LI("Option flags: ", new CODE("(?imnsx-imnsx:...)"), "; for example, ", new CODE("(?s-i:...)"), " enables single-line mode and disables case-insensitivity for the inner expression."),
+                                            new LI("Non-capturing group: ", new CODE("(?:...)")),
+                                            new LI("Positive zero-width look-ahead: ", new CODE("(?=...)")),
+                                            new LI("Positive zero-width look-behind: ", new CODE("(?<=...)")),
+                                            new LI("Negative zero-width look-ahead: ", new CODE("(?!...)")),
+                                            new LI("Negative zero-width look-behind: ", new CODE("(?<!...)")),
+                                            new LI("Atomic subexpression: ", new CODE("(?>...)"))
+                                        )));
+                                }).Process(m => default(ParenthesisType)),
                                 new S('(').Process(m => ParenthesisType.Capturing)
                             )
                                 .Atomic()

@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using RT.Generexes;
 using RT.Servers;
 using RT.TagSoup;
 using RT.Util;
@@ -43,6 +44,28 @@ namespace Tuulbox.Tools
 }
 
 #regex-explain h3, #regex-explain p { margin: .7em 0; }
+
+.regex-error {
+    background: #fff6ee;
+    border: 1px solid #f82;
+    padding: .5em 1em;
+    position: relative;
+}
+.regex-error:before {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: #f82;
+    content: 'Error';
+    padding: .1em .5em;
+    color: white;
+    font-weight: bold;
+}
+.regex-error #regex-show { margin-bottom: .7em; position: relative; }
+.regex-error .regex-good { color: #082; }
+.regex-error .regex-bad { color: #a24; position: relative; }
+.regex-error .regex-indicator { color: #14c; position: absolute; }
+.regex-error .regex-indicator:before { content: '^'; position: relative; left: -50%; top: 1em; }
 ";
             }
         }
@@ -219,14 +242,28 @@ $(function()
 
                 if (regex != null)
                 {
-                    var match = RegexesUtil.Grammar.MatchExact(regex.ToCharArray());
-                    if (match != null)
-                        html = Ut.NewArray<object>(
-                            new P("Here is a breakdown of your regular expression. Hover the mouse over any item to get information about it."),
-                            new DIV(new SPAN { id = "regex-show" }._(match.Result.ToHtml()))
+                    try
+                    {
+                        var match = RegexesUtil.Grammar.MatchExact(regex.ToCharArray());
+                        if (match != null)
+                            html = Ut.NewArray<object>(
+                                new P("Here is a breakdown of your regular expression. Hover the mouse over any item to get information about it."),
+                                new DIV(new SPAN { id = "regex-show" }._(match.Result.ToHtml()))
+                            );
+                        else
+                            html = new object[] { new H2("Parse error"), new P("Your regular expression couldn’t be parsed. If you think it’s a valid regular expression, please send it to us so we can fix our parser.") };
+                    }
+                    catch (ParseException pe)
+                    {
+                        html = new DIV { class_ = "regex-error" }._(
+                            new DIV { id = "regex-show" }._(
+                                new SPAN { class_ = "regex-good" }._(regex.Substring(0, pe.Index)),
+                                new SPAN { class_ = "regex-indicator" }._(),
+                                new SPAN { class_ = "regex-bad" }._(regex.Substring(pe.Index))
+                            ),
+                            pe.HtmlMessage
                         );
-                    else
-                        html = new object[] { new H2("Parse error"), new P("Your regular expression couldn’t be parsed! If you think it’s a valid regular expression, please send it to us so we can fix our parser!") };
+                    }
                 }
 
                 Regex regexObj;

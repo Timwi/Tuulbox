@@ -51,6 +51,7 @@
     <Compile Include="ITool.cs" />
     <Compile Include="Js.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="Regexes\ParseException.cs" />
     <Compile Include="Tools\Impressum.cs" />
     <Compile Include="Tools\JsonPrettify.cs" />
     <Compile Include="TuulboxModule.cs" />
