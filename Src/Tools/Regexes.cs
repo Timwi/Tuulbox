@@ -63,9 +63,10 @@ namespace Tuulbox.Tools
 }
 .regex-error #regex-show { margin-bottom: .7em; position: relative; }
 .regex-error .regex-good { color: #082; }
-.regex-error .regex-bad { color: #a24; position: relative; }
-.regex-error .regex-indicator { color: #14c; position: absolute; }
-.regex-error .regex-indicator:before { content: '^'; position: relative; left: -50%; top: 1em; }
+.regex-error .regex-bad { color: #a24; }
+.regex-error .regex-rest { color: #ddd; }
+.regex-error .regex-indicator { color: #a24; position: absolute; font-size: 70%; }
+.regex-error .regex-indicator:before { content: '^'; position: relative; left: -50%; top: 1.4em; }
 ";
             }
         }
@@ -257,9 +258,11 @@ $(function()
                     {
                         html = new DIV { class_ = "regex-error" }._(
                             new DIV { id = "regex-show" }._(
-                                new SPAN { class_ = "regex-good" }._(regex.Substring(0, pe.Index)),
-                                new SPAN { class_ = "regex-indicator" }._(),
-                                new SPAN { class_ = "regex-bad" }._(regex.Substring(pe.Index))
+                                new SPAN { class_ = "regex-good" }._(regex.Substring(0, pe.StartIndex)),
+                                new SPAN { class_ = "regex-indicator" },
+                                new SPAN { class_ = "regex-bad" }._(regex.Substring(pe.StartIndex, pe.EndIndex - pe.StartIndex)),
+                                pe.EndIndex != pe.StartIndex ? new SPAN { class_ = "regex-indicator" } : null,
+                                new SPAN { class_ = "regex-rest" }._(regex.Substring(pe.EndIndex))
                             ),
                             pe.HtmlMessage
                         );

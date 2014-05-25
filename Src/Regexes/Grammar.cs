@@ -31,7 +31,7 @@ namespace Tuulbox.Regexes
                             new S(ch => ch >= '{' || @"!""#$%&'()*+,-./:;<=>?@[\]^_`".Contains(ch)).Process(m => m.Match[0]),
                             new S('a').Process(m => '\a'),
                             new S('c')
-                                .Then(Stringerex.Expect(ch => ch >= 'A' && ch <= 'Z', m => new ParseException(m.Index + m.Length, new P(new CODE(@"\c"), " must be followed by a capital letter between A and Z."))))
+                                .Then(Stringerex.Expect(ch => ch >= 'A' && ch <= 'Z', m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\c"), " must be followed by a capital letter between A and Z."))))
                                 .Process(m => ((char) (m.Match[1] - 'A' + 1))),
                             new S('e').Process(m => '\x1B'),
                             new S('f').Process(m => '\f'),
@@ -40,10 +40,10 @@ namespace Tuulbox.Regexes
                             new S('t').Process(m => '\t'),
                             new S('v').Process(m => '\v'),
                             new S('x')
-                                .Then(Stringerex.Expect(hexDigit.Times(2), m => new ParseException(m.Index + m.Length, new P(new CODE(@"\x"), " must be followed by two hexadecimal digits."))))
+                                .Then(Stringerex.Expect(hexDigit.Times(2), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\x"), " must be followed by two hexadecimal digits."))))
                                 .Process(m => (char) Convert.ToInt32(m.Match, 16)),
                             new S('u')
-                                .Then(Stringerex.Expect(hexDigit.Times(4), m => new ParseException(m.Index + m.Length, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))))
+                                .Then(Stringerex.Expect(hexDigit.Times(4), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))))
                                 .Process(m => (char) Convert.ToInt32(m.Match, 16)),
                             new S(ch => ch >= '0' && ch <= '7').RepeatGreedy(1, 3).Process(m => (char) Convert.ToInt32(m.Match, 8)));
 
@@ -68,13 +68,13 @@ namespace Tuulbox.Regexes
                                     escapeCodeGroup
                                 ).Process(m => new Func<int, int, Node>((index, length) => new EscapeCodeNode(m.Result, m.OriginalSource, index, length))),
                                 new S('Q')
-                                    .Then(Stringerex.Expect(S.Any.Repeat().Process(m => m.Match).Then(@"\E").Atomic(), m => new ParseException(m.Index + m.Length, new P("The ", new CODE(@"\Q"), " escape code introduces a literal that must be terminated with ", new CODE(@"\E"), "."))))
+                                    .Then(Stringerex.Expect(S.Any.Repeat().Process(m => m.Match).Then(@"\E").Atomic(), m => new ParseException(m.Index - 1, m.Index + 1, new P("The ", new CODE(@"\Q"), " escape code introduces a literal that must be terminated with ", new CODE(@"\E"), "."))))
                                     .Process(m => new Func<int, int, Node>((index, length) => new LiteralNode(m.Result, m.OriginalSource, index, length, isQE: true))),
                                 new S('k')
-                                    .Then(Stringerex.Expect(new S('<').Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>'), m => new ParseException(m.Index + m.Length, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ", where the name must consist of letters and digits and start with a letter."))))
+                                    .Then(Stringerex.Expect(new S('<').Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>'), m => new ParseException(m.Index - 1, m.Index + 1, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ", where the name must consist of letters and digits and start with a letter."))))
                                     .Process(m => new Func<int, int, Node>((index, length) => new NamedBackreference(m.Result, m.OriginalSource, index, length)))
                             ),
-                            m => new ParseException(m.Index + m.Length, new P("Unrecognized escape code. I know about: ", "acefnrtvxudDsSwWAbBzZQk".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
+                            m => new ParseException(m.Index - 1, m.Index + m.Length, new P("Unrecognized escape code. I know about: ", "acefnrtvxudDsSwWAbBzZQk".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
                         )).Process(m => m.Result(m.Index, m.Length));
 
                         // In a character class, \b means “backspace character”
@@ -83,10 +83,10 @@ namespace Tuulbox.Regexes
                             Stringerex.Ors(
                                 charEscapeInCharacterClass.Process(m => CharacterClass.FromCharacter(m.Result)),
                                 escapeCodeGroup.Process(m => CharacterClass.FromEscape(m.Result))
-                            ), m => new ParseException(m.Index + m.Length, new P("Unrecognized escape code. Inside of character classes, I know about: ", "acefnrtvxudDsSwWb".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
+                            ), m => new ParseException(m.Index - 1, m.Index + m.Length, new P("Unrecognized escape code. Inside of character classes, I know about: ", "acefnrtvxudDsSwWb".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
                         ));
 
-                        var characterClassInner =
+                        var characterClass = new S("[^").Process(m => true).Or(new S('[').Process(m => false)).Atomic().ThenRaw(
                             // Accept a close-square-bracket at the beginning of the character class (e.g., []] is a valid class that matches ']').
                             Stringerex.Ors(
 
@@ -111,12 +111,10 @@ namespace Tuulbox.Regexes
                                 S.Not(']').Process(m => CharacterClass.FromCharacter(m.Match[0]))
 
                             ).RepeatGreedy(), Enumerable.Concat)
-                            .Then(S.Expect(']', m => new ParseException(m.Index + m.Length, new P("You need to terminate this character class with a ", new CODE("]"), "."))))
-                            .Atomic();
-                        var characterClass = Stringerex.Ors(
-                            new S("[^").Then(characterClassInner).Process(m => (Node) new CharacterClassNode(m.Result.ToArray(), true, m.OriginalSource, m.Index, m.Length)),
-                            new S('[').Then(characterClassInner).Process(m => (Node) new CharacterClassNode(m.Result.ToArray(), false, m.OriginalSource, m.Index, m.Length))
-                        );
+                            .Then(S.Expect(']', m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this character class with a ", new CODE("]"), "."))))
+                            .Atomic(),
+                            (negated, charClasses) => new { Negated = negated, CharacterClass = charClasses.ToArray() })
+                            .Process(m => (Node) new CharacterClassNode(m.Result.CharacterClass, m.Result.Negated, m.OriginalSource, m.Index, m.Length));
 
                         var start = new S('^').Process(m => (Node) new StartNode(m.OriginalSource, m.Index, m.Length));
                         var end = new S('$').Process(m => (Node) new EndNode(m.OriginalSource, m.Index, m.Length));
@@ -134,16 +132,14 @@ namespace Tuulbox.Regexes
                             // Named capturing groups
                             new S("(?<").Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>').Atomic()
                                 .ThenRaw(generex, (groupName, inner) => new { GroupName = groupName, Inner = inner })
-                                .Then(')')
-                                .Process(m => (Node) new NamedParenthesisNode(m.Result.GroupName, m.Result.Inner, m.OriginalSource, m.Index, m.Length)),
+                                .Process(m => new Func<int, int, Node>((index, length) => new NamedParenthesisNode(m.Result.GroupName, m.Result.Inner, m.OriginalSource, index, length))),
 
                             // Option flags
                             new S("(?").Then(optionFlags).ThenRaw(new S('-').Then(optionFlags).OptionalGreedy(), (enable, disable) => new { Enable = enable, Disable = disable.FirstOrDefault() })
                                 .Do(m => m.Match.Contains('-') ? m.Result.Disable != 0 : m.Result.Enable != 0)
                                 .Then(':')
                                 .ThenRaw(generex, (inf, inner) => new { inf.Enable, inf.Disable, Inner = inner })
-                                .Then(')')
-                                .Process(m => (Node) new FlagsParenthesisNode(m.Result.Enable, m.Result.Disable, m.Result.Inner, m.OriginalSource, m.Index, m.Length)),
+                                .Process(m => new Func<int, int, Node>((index, length) => new FlagsParenthesisNode(m.Result.Enable, m.Result.Disable, m.Result.Inner, m.OriginalSource, index, length))),
 
                             // All types of parentheses that only have a type (and no other parameters)
                             Stringerex.Ors(
@@ -153,28 +149,25 @@ namespace Tuulbox.Regexes
                                 new S("(?<=").Process(m => ParenthesisType.PositiveLookBehind),
                                 new S("(?<!").Process(m => ParenthesisType.NegativeLookBehind),
                                 new S("(?>").Process(m => ParenthesisType.Atomic),
-                                new S("(?").Do(m =>
-                                {
-                                    throw new ParseException(m.Index + m.Length, Ut.NewArray<object>(
-                                        new P("This construct is not valid. Valid constructs beginning with ", new CODE("(?"), " are:"),
-                                        new UL(
-                                            new LI("Named capturing groups: ", new CODE("(?<name>...)"), " (name must consist of letters and digits and start with a letter)"),
-                                            new LI("Option flags: ", new CODE("(?imnsx-imnsx:...)"), "; for example, ", new CODE("(?s-i:...)"), " enables single-line mode and disables case-insensitivity for the inner expression."),
-                                            new LI("Non-capturing group: ", new CODE("(?:...)")),
-                                            new LI("Positive zero-width look-ahead: ", new CODE("(?=...)")),
-                                            new LI("Positive zero-width look-behind: ", new CODE("(?<=...)")),
-                                            new LI("Negative zero-width look-ahead: ", new CODE("(?!...)")),
-                                            new LI("Negative zero-width look-behind: ", new CODE("(?<!...)")),
-                                            new LI("Atomic subexpression: ", new CODE("(?>...)"))
-                                        )));
-                                }).Process(m => default(ParenthesisType)),
+                                new S("(?").Throw<ParenthesisType>(m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray<object>(
+                                    new P("This construct is not valid. Valid constructs beginning with ", new CODE("(?"), " are:"),
+                                    new UL(
+                                        new LI("Named capturing groups: ", new CODE("(?<name>...)"), " (name must consist of letters and digits and start with a letter)"),
+                                        new LI("Option flags: ", new CODE("(?imnsx-imnsx:...)"), "; for example, ", new CODE("(?s-i:...)"), " enables single-line mode and disables case-insensitivity for the inner expression."),
+                                        new LI("Non-capturing group: ", new CODE("(?:...)")),
+                                        new LI("Positive zero-width look-ahead: ", new CODE("(?=...)")),
+                                        new LI("Positive zero-width look-behind: ", new CODE("(?<=...)")),
+                                        new LI("Negative zero-width look-ahead: ", new CODE("(?!...)")),
+                                        new LI("Negative zero-width look-behind: ", new CODE("(?<!...)")),
+                                        new LI("Atomic subexpression: ", new CODE("(?>...)")))))),
                                 new S('(').Process(m => ParenthesisType.Capturing)
                             )
                                 .Atomic()
                                 .ThenRaw(generex, (type, inner) => new { Type = type, Inner = inner })
-                                .Then(')')
-                                .Process(m => (Node) new ParenthesisNode(m.Result.Type, m.Result.Inner, m.OriginalSource, m.Index, m.Length))
-                        );
+                                .Process(m => new Func<int, int, Node>((index, length) => new ParenthesisNode(m.Result.Type, m.Result.Inner, m.OriginalSource, index, length)))
+                        )
+                            .Then(S.Expect(')', m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this parenthesis with a ", new CODE(")"), "."))))
+                            .Process(m => m.Result(m.Index, m.Length));
 
                         var repeater = Stringerex.Ors(
                             new S("*?").Process(m => new { Min = 0, Max = (int?) null, Greedy = Greediness.Nongreedy, Type = RepeaterType.Star }),

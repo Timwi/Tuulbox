@@ -8,12 +8,14 @@ namespace Tuulbox.Regexes
 {
     sealed class ParseException : Exception
     {
-        public int Index { get; private set; }
+        public int StartIndex { get; private set; }
+        public int EndIndex { get; private set; }
         public object HtmlMessage { get; private set; }
-        public ParseException(int index, object htmlMessage)
+        public ParseException(int startIndex, int endIndex, object htmlMessage)
             : base(Tag.ToString(htmlMessage))
         {
-            Index = index;
+            StartIndex = startIndex;
+            EndIndex = endIndex;
             HtmlMessage = htmlMessage;
         }
     }
