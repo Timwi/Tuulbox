@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RT.Generexes;
 using RT.TagSoup;
@@ -110,10 +111,10 @@ namespace Tuulbox.Regexes
                                 // Anything else is a literal character.
                                 S.Not(']').Process(m => CharacterClass.FromCharacter(m.Match[0]))
 
-                            ).RepeatGreedy(), Enumerable.Concat)
-                            .Then(S.Expect(']', m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this character class with a ", new CODE("]"), "."))))
-                            .Atomic(),
+                            ).RepeatGreedy(), Enumerable.Concat),
                             (negated, charClasses) => new { Negated = negated, CharacterClass = charClasses.ToArray() })
+                            .ThenExpect(m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this character class with a ", new CODE("]"), ".")), ']')
+                            .Atomic()
                             .Process(m => (Node) new CharacterClassNode(m.Result.CharacterClass, m.Result.Negated, m.OriginalSource, m.Index, m.Length));
 
                         var start = new S('^').Process(m => (Node) new StartNode(m.OriginalSource, m.Index, m.Length));
@@ -166,7 +167,7 @@ namespace Tuulbox.Regexes
                                 .ThenRaw(generex, (type, inner) => new { Type = type, Inner = inner })
                                 .Process(m => new Func<int, int, Node>((index, length) => new ParenthesisNode(m.Result.Type, m.Result.Inner, m.OriginalSource, index, length)))
                         )
-                            .Then(S.Expect(')', m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this parenthesis with a ", new CODE(")"), "."))))
+                            .ThenExpect(m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this parenthesis with a ", new CODE(")"), ".")), ')')
                             .Process(m => m.Result(m.Index, m.Length));
 
                         var repeater = Stringerex.Ors(
