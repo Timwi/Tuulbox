@@ -67,6 +67,8 @@ namespace Tuulbox.Tools
 .regex-error .regex-rest { color: #ddd; }
 .regex-error .regex-indicator { color: #a24; position: absolute; font-size: 70%; }
 .regex-error .regex-indicator:before { content: '^'; position: relative; left: -50%; top: 1.4em; }
+
+code { background: rgba(0, 0, 0, .05); padding: .05em .2em; border: 1px solid rgba(0, 0, 0, .1); }
 ";
             }
         }
@@ -229,7 +231,6 @@ $(function()
         {
             string regex = null, input = null;
             bool single = true, multi = false, ignoreCase = false, ignoreWhitespace = false;
-            bool invalid = false;
             object html = null;
 
             if (req.Method == HttpMethod.Post)
@@ -269,14 +270,14 @@ $(function()
                     }
                 }
 
-                Regex regexObj;
-                RegexOptions opt = 0;
-                if (single) opt |= RegexOptions.Singleline;
-                if (multi) opt |= RegexOptions.Multiline;
-                if (ignoreCase) opt |= RegexOptions.IgnoreCase;
-                if (ignoreWhitespace) opt |= RegexOptions.IgnorePatternWhitespace;
-                try { regexObj = new Regex(regex, opt); }
-                catch { invalid = true; }
+                //Regex regexObj;
+                //RegexOptions opt = 0;
+                //if (single) opt |= RegexOptions.Singleline;
+                //if (multi) opt |= RegexOptions.Multiline;
+                //if (ignoreCase) opt |= RegexOptions.IgnoreCase;
+                //if (ignoreWhitespace) opt |= RegexOptions.IgnorePatternWhitespace;
+                //try { regexObj = new Regex(regex, opt); }
+                //catch { invalid = true; }
             }
 
             return new FORM { method = method.post, action = req.Url.ToFull() }._(

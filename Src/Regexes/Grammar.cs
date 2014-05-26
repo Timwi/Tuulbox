@@ -22,30 +22,24 @@ namespace Tuulbox.Regexes
                 {
                     _grammar = SN.Recursive(generex =>
                     {
-                        var specialCharacters = @"[^$.*+(){\|?";
+                        var specialCharacters = @"[]^$.*+(){}\|?";
                         var number = new S(ch => ch >= '0' && ch <= '9').RepeatGreedy(1);
                         var matchedNumber = number.Process(m => Convert.ToInt32(m.Match));
                         var hexDigit = new S(ch => (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'));
 
-                        var literal = new S(ch => !specialCharacters.Contains(ch)).Process(m => (Node) new LiteralNode(m.Match, m.OriginalSource, m.Index, m.Length));
+                        var literal = new S(ch => !specialCharacters.Contains(ch)).RepeatGreedy(1).Process(m => (Node) new LiteralNode(m.Match, m.OriginalSource, m.Index, m.Length));
                         var escapeCodeChar = Stringerex.Ors(
                             new S(ch => ch >= '{' || @"!""#$%&'()*+,-./:;<=>?@[\]^_`".Contains(ch)).Process(m => m.Match[0]),
                             new S('a').Process(m => '\a'),
-                            new S('c')
-                                .Then(Stringerex.Expect(ch => ch >= 'A' && ch <= 'Z', m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\c"), " must be followed by a capital letter between A and Z."))))
-                                .Process(m => ((char) (m.Match[1] - 'A' + 1))),
+                            new S('c').ThenExpect(new S(ch => ch >= 'A' && ch <= 'Z').Process(m => ((char) (m.Match[1] - 'A' + 1))), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\c"), " must be followed by a capital letter between A and Z."))),
                             new S('e').Process(m => '\x1B'),
                             new S('f').Process(m => '\f'),
                             new S('n').Process(m => '\n'),
                             new S('r').Process(m => '\r'),
                             new S('t').Process(m => '\t'),
                             new S('v').Process(m => '\v'),
-                            new S('x')
-                                .Then(Stringerex.Expect(hexDigit.Times(2), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\x"), " must be followed by two hexadecimal digits."))))
-                                .Process(m => (char) Convert.ToInt32(m.Match, 16)),
-                            new S('u')
-                                .Then(Stringerex.Expect(hexDigit.Times(4), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))))
-                                .Process(m => (char) Convert.ToInt32(m.Match, 16)),
+                            new S('x').ThenExpect(hexDigit.Times(2).Process(m => (char) Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\x"), " must be followed by two hexadecimal digits."))),
+                            new S('u').ThenExpect(hexDigit.Times(4).Process(m => (char) Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))),
                             new S(ch => ch >= '0' && ch <= '7').RepeatGreedy(1, 3).Process(m => (char) Convert.ToInt32(m.Match, 8)));
 
                         var escapeCodeGroup = Stringerex.Ors(
@@ -57,7 +51,7 @@ namespace Tuulbox.Regexes
                             new S('W').Process(m => EscapeCode.NonWordCharacter));
 
                         var backslash = new S('\\');
-                        var escapeOutsideCharacterClass = backslash.Then(Stringerex.Expect(
+                        var escapeOutsideCharacterClass = backslash.ThenExpect(
                             Stringerex.Ors(
                                 escapeCodeChar.Process(m => new Func<int, int, Node>((index, length) => new EscapedLiteralNode(m.Result.ToString(), m.OriginalSource, index, length))),
                                 Stringerex.Ors(
@@ -69,23 +63,23 @@ namespace Tuulbox.Regexes
                                     escapeCodeGroup
                                 ).Process(m => new Func<int, int, Node>((index, length) => new EscapeCodeNode(m.Result, m.OriginalSource, index, length))),
                                 new S('Q')
-                                    .Then(Stringerex.Expect(S.Any.Repeat().Process(m => m.Match).Then(@"\E").Atomic(), m => new ParseException(m.Index - 1, m.Index + 1, new P("The ", new CODE(@"\Q"), " escape code introduces a literal that must be terminated with ", new CODE(@"\E"), "."))))
+                                    .ThenExpect(S.Anything.Process(m => m.Match).Then(@"\E").Atomic(), m => new ParseException(m.Index - 1, m.Index + 1, new P("The ", new CODE(@"\Q"), " escape code introduces a literal that must be terminated with ", new CODE(@"\E"), ".")))
                                     .Process(m => new Func<int, int, Node>((index, length) => new LiteralNode(m.Result, m.OriginalSource, index, length, isQE: true))),
                                 new S('k')
-                                    .Then(Stringerex.Expect(new S('<').Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>'), m => new ParseException(m.Index - 1, m.Index + 1, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ", where the name must consist of letters and digits and start with a letter."))))
+                                    .ThenExpect(new S('<').Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>'), m => new ParseException(m.Index - 1, m.Index + 1, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ", where the name must consist of letters and digits and start with a letter.")))
                                     .Process(m => new Func<int, int, Node>((index, length) => new NamedBackreference(m.Result, m.OriginalSource, index, length)))
                             ),
-                            m => new ParseException(m.Index - 1, m.Index + m.Length, new P("Unrecognized escape code. I know about: ", "acefnrtvxudDsSwWAbBzZQk".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
-                        )).Process(m => m.Result(m.Index, m.Length));
+                            m => new ParseException(m.Index, m.Index + m.Length, new P("Unrecognized escape code. I know about: ", "acefnrtvxudDsSwWAbBzZQk".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
+                        ).Process(m => m.Result(m.Index, m.Length));
 
                         // In a character class, \b means “backspace character”
                         var charEscapeInCharacterClass = escapeCodeChar.Or(new S('b').Process(m => '\b'));
-                        var escapeInCharacterClass = backslash.Then(Stringerex.Expect(
+                        var escapeInCharacterClass = backslash.ThenExpect(
                             Stringerex.Ors(
                                 charEscapeInCharacterClass.Process(m => CharacterClass.FromCharacter(m.Result)),
-                                escapeCodeGroup.Process(m => CharacterClass.FromEscape(m.Result))
-                            ), m => new ParseException(m.Index - 1, m.Index + m.Length, new P("Unrecognized escape code. Inside of character classes, I know about: ", "acefnrtvxudDsSwWb".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
-                        ));
+                                escapeCodeGroup.Process(m => CharacterClass.FromEscape(m.Result))),
+                            m => new ParseException(m.Index, m.Index + m.Length, new P("Unrecognized escape code. Inside of character classes, I know about: ", "acefnrtvxudDsSwWb".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
+                        );
 
                         var characterClass = new S("[^").Process(m => true).Or(new S('[').Process(m => false)).Atomic().ThenRaw(
                             // Accept a close-square-bracket at the beginning of the character class (e.g., []] is a valid class that matches ']').
@@ -167,7 +161,14 @@ namespace Tuulbox.Regexes
                                 .ThenRaw(generex, (type, inner) => new { Type = type, Inner = inner })
                                 .Process(m => new Func<int, int, Node>((index, length) => new ParenthesisNode(m.Result.Type, m.Result.Inner, m.OriginalSource, index, length)))
                         )
-                            .ThenExpect(m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this parenthesis with a ", new CODE(")"), ".")), ')')
+                            .Then(S.Ors(
+                                S.Ors(']', '}').Throw(m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray(
+                                    new P("You have a closing bracket here that has no matching opening bracket."),
+                                    new P("If you intended for the character to match literally, precede it with a backslash, i.e.: ", new CODE("\\", m.Match)),
+                                    new P("Some regular expression dialects allow this use of ", new CODE(m.Match), " and interpret it to match a literal ", new CODE(m.Match), " character. For compatibility, such use is discouraged. Use ", new CODE("\\", m.Match), " instead if this is the intention.")
+                                ))),
+                                S.Expect(')', m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this parenthesis with a ", new CODE(")"), ".")))
+                            ))
                             .Process(m => m.Result(m.Index, m.Length));
 
                         var repeater = Stringerex.Ors(
@@ -179,22 +180,53 @@ namespace Tuulbox.Regexes
                             new S('+').Process(m => new { Min = 1, Max = (int?) null, Greedy = Greediness.Greedy, Type = RepeaterType.Plus }),
                             new S("??").Process(m => new { Min = 0, Max = (int?) 1, Greedy = Greediness.Nongreedy, Type = RepeaterType.Optional }),
                             new S('?').Process(m => new { Min = 0, Max = (int?) 1, Greedy = Greediness.Greedy, Type = RepeaterType.Optional }),
-                            new S('{').Then(
+                            new S('{').ThenExpect(
                                 matchedNumber.Then(',').ThenRaw(matchedNumber.OptionalGreedy().ProcessRaw(m => m.Cast<int?>().FirstOrDefault()), (min, max) => new { Min = min, Max = max, Type = max == null ? RepeaterType.Min : RepeaterType.MinMax })
                                     .Or(new S(',').Then(matchedNumber).ProcessRaw(max => new { Min = 0, Max = (int?) max, Type = RepeaterType.Max }))
                                     .Or(matchedNumber.ProcessRaw(m => new { Min = m, Max = (int?) m, Type = RepeaterType.Specific }))
-                            ).ThenRaw(
-                                Stringerex.Ors(new S("}?").Process(m => Greediness.Nongreedy), new S("}+").Process(m => Greediness.Atomic), new S('}').Process(m => Greediness.Greedy)).Atomic(),
-                                (minmax, greedy) => new { Min = minmax.Min, Max = minmax.Max, Greedy = greedy, Type = minmax.Type }
+                                    .Atomic(),
+                                m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray<object>(
+                                    new P("The correct syntax for this repeater is one of the following:"),
+                                    new UL(
+                                        new LI(new CODE("{4,7}"), " — match between 4 and 7 times"),
+                                        new LI(new CODE("{,7}"), " — match between 0 and 7 times"),
+                                        new LI(new CODE("{4,}"), " — match at least 4 times"),
+                                        new LI(new CODE("{4}"), " — match exactly 4 times")
+                                    ),
+                                    new P("Additionally, the operator may be followed by ", new CODE("?"), " (non-greedy) or ", new CODE("+"), " (atomic)."),
+                                    new P("Some regular expression dialects allow this use of ", new CODE("{"), " and interpret it to match a literal ", new CODE("{"), " character. For compatibility, such use is discouraged. Use ", new CODE("\\{"), " instead if this is the intention.")
+                                ))
+                            ).ThenExpectRaw(
+                                Stringerex.Ors(
+                                    new S("}?").Process(m => Greediness.Nongreedy),
+                                    new S("}+").Process(m => Greediness.Atomic),
+                                    new S('}').Process(m => Greediness.Greedy)
+                                ).Atomic(),
+                                (minmax, greedy) => new { Min = minmax.Min, Max = minmax.Max, Greedy = greedy, Type = minmax.Type },
+                                m => new ParseException(m.Index, m.Index + m.Length, new P("You need to terminate this repeater with a ", new CODE("}"), ", ", new CODE("}?"), " or ", new CODE("}+"), "."))
                             )
                         ).Atomic();
-                        return Stringerex.Ors(literal, escapeOutsideCharacterClass, characterClass, start, end, any, parentheses).Atomic()
+                        return Stringerex.Ors(literal, escapeOutsideCharacterClass, characterClass, start, end, any, parentheses,
+                            S.Ors('?', '*', '+', '{').Throw<Node>(m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray(
+                                new P("You cannot place a repeater here. A repeater must be preceded by the element it applies to."),
+                                new P("If you intended for the character to match literally, precede it with a backslash, i.e.: ", new CODE("\\", m.Match)),
+                                m.Match == "{" ? new P("Some regular expression dialects allow this use of ", new CODE("{"), " and interpret it to match a literal ", new CODE("{"), " character. For compatibility, such use is discouraged. Use ", new CODE("\\{"), " instead if this is the intention.") : null
+                            )))
+                        ).Atomic()
                             .Then(repeater.OptionalGreedy(), (child, repeat) => repeat.Result.Select(r => new RepeatOperatorNode(r.Type, r.Min, r.Max, r.Greedy, child, repeat.OriginalSource, child.Index, child.Length + repeat.Length)).DefaultIfEmpty(child).First())
                             .RepeatGreedy()
-                            .Process(match => { var arr = match.Result.ToArray(); return arr.Length == 1 ? arr[0] : new ThenNode(arr, match.OriginalSource, match.Index, match.Length); })
+                            .Process(match => match.Result.ToArray().Apply(arr => arr.Length == 1 ? arr[0] : new ThenNode(arr, match.OriginalSource, match.Index, match.Length)))
                             .RepeatWithSeparatorGreedy('|')
-                            .Process(match => { var arr = match.Result.ToArray(); return arr.Length == 1 ? arr[0] : new OrNode(arr, match.OriginalSource, match.Index, match.Length); });
-                    });
+                            .Process(match => match.Result.ToArray().Apply(arr => arr.Length == 1 ? arr[0] : new OrNode(arr, match.OriginalSource, match.Index, match.Length)));
+                    })
+                        .Then(S.Ors(
+                            S.Ors(')', ']', '}').Throw(m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray(
+                                new P("You have a closing bracket here that has no matching opening bracket."),
+                                new P("If you intended for the character to match literally, precede it with a backslash, i.e.: ", new CODE("\\", m.Match)),
+                                new P("Some regular expression dialects allow this use of ", new CODE(m.Match), " and interpret it to match a literal ", new CODE(m.Match), " character. For compatibility, such use is discouraged. Use ", new CODE("\\", m.Match), " instead if this is the intention.")
+                            ))),
+                            S.End
+                        ));
                 }
                 return _grammar;
             }
