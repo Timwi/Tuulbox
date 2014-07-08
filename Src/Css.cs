@@ -50,6 +50,59 @@ table.layout { table-layout: fixed; width: 100%; border-collapse: collapse; }
 table.layout th, table.layout td { vertical-align: top; }
 
 kbd.accesskey { font-family: inherit; text-decoration: underline; }
+
+pre { margin: 0; }
+
+.tab-control > .tab {
+    border: 1px solid #888;
+    border-radius: 5px;
+    overflow: auto;
+    padding: .5em .7em;
+}
+.tab-control > .tabs {
+    padding-left: .5em;
+}
+.tab-control > .tabs > a {
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    padding: .2em .5em;
+    vertical-align: bottom;
+}
+.tab-control > .tabs > a.selected {
+    border-color: #888;
+    padding: .3em .7em;
+    background: white;
+    position: relative;
+    top: 1px;
+}
+
+.error {
+    background: #fff6ee;
+    border: 1px solid #f82;
+    padding: .5em 1em;
+    position: relative;
+}
+.error:before {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: #f82;
+    content: 'Error';
+    padding: .1em .5em;
+    color: white;
+    font-weight: bold;
+}
+.error .input { margin-bottom: .7em; position: relative; color: black; font-size: 250%; white-space: pre; }
+.error .good { color: #082; }
+.error .bad { color: #a24; }
+.error .rest { color: #ddd; }
+.error .indicator { color: #a24; position: absolute; font-size: 70%; }
+.error .indicator:before { content: '^'; position: relative; left: -50%; top: 1.4em; }
+
+code { background: rgba(0, 0, 0, .05); padding: .05em .2em; border: 1px solid rgba(0, 0, 0, .1); }
 ".ToUtf8();
 
         object ITuul.Handle(TuulboxModule module, HttpRequest req)

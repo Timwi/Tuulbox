@@ -52,6 +52,7 @@
     <Compile Include="Js.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Regexes\ParseException.cs" />
+    <Compile Include="Tools\Diff.cs" />
     <Compile Include="Tools\Impressum.cs" />
     <Compile Include="Tools\JsonPrettify.cs" />
     <Compile Include="TuulboxModule.cs" />
@@ -95,7 +96,16 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"$(TargetPath)" --post-build-check "$(SolutionDir)."</PostBuildEvent>
+    <PostBuildEvent>"$(TargetPath)" --post-build-check "$(SolutionDir)."
+if "$(ConfigurationName)"=="Release" (
+  xcopy /y "$(TargetPath)" D:\Propeller\Modules
+  xcopy /y "$(TargetDir)"Tuulbox.pdb D:\Propeller\Modules
+  xcopy /y "$(TargetDir)"RT.Generex.dll D:\Propeller\Modules
+  xcopy /y "$(TargetDir)"RT.KitchenSink.dll D:\Propeller\Modules
+  xcopy /y "$(TargetDir)"RT.Util.dll D:\Propeller\Modules
+  xcopy /y "$(TargetDir)"RT.TagSoup.dll D:\Propeller\Modules
+)
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

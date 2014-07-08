@@ -19,33 +19,39 @@ namespace Tuulbox.Tools
 
         object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
+            object html = null;
+            string input = null;
             if (req.Method == HttpMethod.Post)
             {
+                input = req.Post["input"].Value;
                 try
                 {
-                    var parsed = JsonValue.Parse(req.Post["input"].Value);
-                    return Ut.NewArray<object>(
+                    var parsed = JsonValue.Parse(input);
+                    html = Ut.NewArray<object>(
                         new H3("Browsable"),
                         new JsonHtmlifier(parsed).Html,
                         new H3("Beautified"),
                         new PRE(JsonValue.ToStringIndented(parsed)));
                 }
-                catch (Exception e)
+                catch (JsonParseException pe)
                 {
-                    return Ut.NewArray<object>(
-                        new H3("Error"),
-                        new P(e.Message)
+                    html = new DIV { class_ = "error" }._(
+                        new DIV { class_ = "input" }._(
+                            new SPAN { class_ = "good" }._(input.Substring(0, pe.Index).ElideFront(20)),
+                            new SPAN { class_ = "indicator" },
+                            new SPAN { class_ = "bad" }._(input.Substring(pe.Index).ElideBack(20))
+                        ),
+                        pe.Message
                     );
                 }
             }
-            else
-            {
-                return new FORM { method = method.post, action = req.Url.ToFull() }._(
-                    new H3(Helpers.LabelWithAccessKey("JSON", "x", "json_json")),
-                    new DIV(new TEXTAREA { name = "input", id = "json_json", accesskey = "," }._()),
-                    new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(Helpers.TextWithAccessKey("Go for it", "g")))
-                );
-            }
+
+            return new FORM { method = method.post, action = req.Url.ToFull() }._(
+                html,
+                new H3(Helpers.LabelWithAccessKey("JSON", "x", "json_json")),
+                new DIV(new TEXTAREA { name = "input", id = "json_json", accesskey = "," }._(input)),
+                new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(Helpers.TextWithAccessKey("Go for it", "g")))
+            );
         }
 
         private sealed class JsonHtmlifier

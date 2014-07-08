@@ -1,13 +1,12 @@
 ﻿using System;
-using RT.Util.ExtensionMethods;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Reflection;
 using RT.PropellerApi;
 using RT.Servers;
 using RT.Util;
+using RT.Util.ExtensionMethods;
 using RT.Util.Json;
-using System.Reflection;
 using RT.Util.Serialization;
 
 namespace Tuulbox
@@ -107,6 +106,8 @@ namespace Tuulbox
         public void Init(LoggerBase log, JsonValue settings, ISettingsSaver saver)
         {
             Settings = ClassifyJson.Deserialize<TuulboxSettings>(settings);
+            if (Settings == null)
+                Settings = new TuulboxSettings();
             saver.SaveSettings(ClassifyJson.Serialize(Settings));
         }
 

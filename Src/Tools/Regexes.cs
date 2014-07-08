@@ -44,31 +44,6 @@ namespace Tuulbox.Tools
 }
 
 #regex-explain h3, #regex-explain p { margin: .7em 0; }
-
-.regex-error {
-    background: #fff6ee;
-    border: 1px solid #f82;
-    padding: .5em 1em;
-    position: relative;
-}
-.regex-error:before {
-    position: absolute;
-    right: 0;
-    top: 0;
-    background: #f82;
-    content: 'Error';
-    padding: .1em .5em;
-    color: white;
-    font-weight: bold;
-}
-.regex-error #regex-show { margin-bottom: .7em; position: relative; }
-.regex-error .regex-good { color: #082; }
-.regex-error .regex-bad { color: #a24; }
-.regex-error .regex-rest { color: #ddd; }
-.regex-error .regex-indicator { color: #a24; position: absolute; font-size: 70%; }
-.regex-error .regex-indicator:before { content: '^'; position: relative; left: -50%; top: 1.4em; }
-
-code { background: rgba(0, 0, 0, .05); padding: .05em .2em; border: 1px solid rgba(0, 0, 0, .1); }
 ";
             }
         }
@@ -250,20 +225,20 @@ $(function()
                         if (match != null)
                             html = Ut.NewArray<object>(
                                 new P("Here is a breakdown of your regular expression. Hover the mouse over any item to get information about it."),
-                                new DIV(new SPAN { id = "regex-show" }._(match.Result.ToHtml()))
+                                new DIV(new SPAN { id = "regex-show", class_ = "input" }._(match.Result.ToHtml()))
                             );
                         else
                             html = new object[] { new H2("Parse error"), new P("Your regular expression couldn’t be parsed. If you think it’s a valid regular expression, please send it to us so we can fix our parser.") };
                     }
                     catch (ParseException pe)
                     {
-                        html = new DIV { class_ = "regex-error" }._(
-                            new DIV { id = "regex-show" }._(
-                                new SPAN { class_ = "regex-good" }._(regex.Substring(0, pe.StartIndex)),
-                                new SPAN { class_ = "regex-indicator" },
-                                new SPAN { class_ = "regex-bad" }._(regex.Substring(pe.StartIndex, pe.EndIndex - pe.StartIndex)),
-                                pe.EndIndex != pe.StartIndex ? new SPAN { class_ = "regex-indicator" } : null,
-                                new SPAN { class_ = "regex-rest" }._(regex.Substring(pe.EndIndex))
+                        html = new DIV { class_ = "error" }._(
+                            new DIV { id = "regex-show", class_ = "input" }._(
+                                new SPAN { class_ = "good" }._(regex.Substring(0, pe.StartIndex)),
+                                new SPAN { class_ = "indicator" },
+                                new SPAN { class_ = "bad" }._(regex.Substring(pe.StartIndex, pe.EndIndex - pe.StartIndex)),
+                                pe.EndIndex != pe.StartIndex ? new SPAN { class_ = "indicator" } : null,
+                                new SPAN { class_ = "rest" }._(regex.Substring(pe.EndIndex))
                             ),
                             pe.HtmlMessage
                         );
@@ -287,6 +262,7 @@ $(function()
                     new TR(
                         new TD(
                             new H3(Helpers.LabelWithAccessKey("Regular expression", "r", "regex_regex")),
+                            new P("Type any regular expression to get information about it."),
                             new DIV(new TEXTAREA { name = "regex", id = "regex_regex", accesskey = "," }._(regex))
                 //),
                 //new TD(),
@@ -296,14 +272,14 @@ $(function()
                         )
                     )
                 ),
-                new DIV(new INPUT { type = itype.checkbox, name = "s", value = "1", id = "regex_s", checked_ = single }, Helpers.LabelWithAccessKey(" Single-line mode", "s", "regex_s"),
+                /*new DIV(new INPUT { type = itype.checkbox, name = "s", value = "1", id = "regex_s", checked_ = single }, Helpers.LabelWithAccessKey(" Single-line mode", "s", "regex_s"),
                     new DIV { class_ = "explain" }._("If set, ", new CODE("."), " matches any character; if unset, it matches any except newline.")),
                 new DIV(new INPUT { type = itype.checkbox, name = "m", value = "1", id = "regex_m", checked_ = multi }, Helpers.LabelWithAccessKey(" Multi-line mode", "m", "regex_m"),
                     new DIV { class_ = "explain" }._("If set, ", new CODE("^"), " and ", new CODE("$"), " match at the beginning and end of any line; if unset, only at the beginning and end of the entire input string.")),
                 new DIV(new INPUT { type = itype.checkbox, name = "i", value = "1", id = "regex_i", checked_ = ignoreCase }, Helpers.LabelWithAccessKey(" Ignore case", "i", "regex_i"),
                     new DIV { class_ = "explain" }._("If set, lower-case and upper-case letters are treated as equivalent.")),
                 new DIV(new INPUT { type = itype.checkbox, name = "x", value = "1", id = "regex_x", checked_ = ignoreWhitespace }, Helpers.LabelWithAccessKey(" Ignore pattern white-space", "w", "regex_x"),
-                    new DIV { class_ = "explain" }._("If set, spaces, tabs and newlines in the regular expression are ignored. Also, the ", new CODE("#"), " character introduces a comment that spans until the end of the line.")),
+                    new DIV { class_ = "explain" }._("If set, spaces, tabs and newlines in the regular expression are ignored. Also, the ", new CODE("#"), " character introduces a comment that spans until the end of the line.")),*/
                 new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(Helpers.TextWithAccessKey("Go for it", "g")))
             );
         }
