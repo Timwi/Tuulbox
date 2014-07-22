@@ -107,7 +107,7 @@ namespace Tuulbox.Regexes
 
                             ).RepeatGreedy(), Enumerable.Concat),
                             (negated, charClasses) => new { Negated = negated, CharacterClass = charClasses.ToArray() })
-                            .ThenExpect(m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this character class with a ", new CODE("]"), ".")), ']')
+                            .ThenExpect(']', m => new ParseException(m.Index, m.Index + m.Length, new P("You need to terminate this character class with a ", new CODE("]"), ".")))
                             .Atomic()
                             .Process(m => (Node) new CharacterClassNode(m.Result.CharacterClass, m.Result.Negated, m.OriginalSource, m.Index, m.Length));
 
@@ -161,14 +161,12 @@ namespace Tuulbox.Regexes
                                 .ThenRaw(generex, (type, inner) => new { Type = type, Inner = inner })
                                 .Process(m => new Func<int, int, Node>((index, length) => new ParenthesisNode(m.Result.Type, m.Result.Inner, m.OriginalSource, index, length)))
                         )
-                            .Then(S.Ors(
-                                S.Ors(']', '}').Throw(m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray(
-                                    new P("You have a closing bracket here that has no matching opening bracket."),
-                                    new P("If you intended for the character to match literally, precede it with a backslash, i.e.: ", new CODE("\\", m.Match)),
-                                    new P("Some regular expression dialects allow this use of ", new CODE(m.Match), " and interpret it to match a literal ", new CODE(m.Match), " character. For compatibility, such use is discouraged. Use ", new CODE("\\", m.Match), " instead if this is the intention.")
-                                ))),
-                                S.Expect(')', m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this parenthesis with a ", new CODE(")"), ".")))
-                            ))
+                            .Then(S.Ors(']', '}').Throw(m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray(
+                                new P("You have a closing bracket here that has no matching opening bracket."),
+                                new P("If you intended for the character to match literally, precede it with a backslash, i.e.: ", new CODE("\\", m.Match)),
+                                new P("Some regular expression dialects allow this use of ", new CODE(m.Match), " and interpret it to match a literal ", new CODE(m.Match), " character. For compatibility, such use is discouraged. Use ", new CODE("\\", m.Match), " instead if this is the intention.")
+                            ))).Or(S.Empty))
+                            .ThenExpect(')', m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this parenthesis with a ", new CODE(")"), ".")))
                             .Process(m => m.Result(m.Index, m.Length));
 
                         var repeater = Stringerex.Ors(
