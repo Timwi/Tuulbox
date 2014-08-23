@@ -48,7 +48,6 @@ namespace Tuulbox.Tools
                     .diff-Ins { background: #8f8; font-weight: bold; }
                     .diff-Del { background: #f88; font-style: italic; }
                     .diff-tab-control { position: relative; }
-                    .diff-font-controls { position: absolute; top: -1em; right: 0; text-align: right; }
                     .diff-pre { display: inline-block; min-width: 100%; }
                 ";
             }
@@ -91,7 +90,7 @@ namespace Tuulbox.Tools
                     );
 
                     output = new DIV { class_ = "tab-control diff-tab-control" }._(
-                        new DIV { class_ = "diff-font-controls" }._(
+                        new DIV { class_ = "controls" }._(
                             new DIV(
                                 new B("Font:"),
                                 " ",

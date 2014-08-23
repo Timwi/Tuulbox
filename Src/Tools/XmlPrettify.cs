@@ -26,8 +26,15 @@ namespace Tuulbox.Tools
                 try
                 {
                     var rootElement = XDocument.Parse(req.Post["input"].Value).Root;
-                    return Ut.NewArray<object>(
+                    return new DIV { id = "xml-main" }._(
                         new H3("Browsable"),
+                        new DIV { class_ = "controls" }._(
+                            new DIV(
+                                new A { href = "#", id = "xml-expand-all", accesskey = "e" }._(Helpers.TextWithAccessKey("Expand all", "e")),
+                                " | ",
+                                new A { href = "#", id = "xml-collapse-all", accesskey = "c" }._(Helpers.TextWithAccessKey("Collapse all", "c"))
+                            )
+                        ),
                         new XmlHtmlifier(rootElement).Html,
                         new H3("Beautified"),
                         new PRE(new Func<object>(() => rootElement.ToString())));
@@ -135,32 +142,47 @@ namespace Tuulbox.Tools
             {
                 return @"
                     $(function() {
+                        var on = { '0': true };
+                        var all = [];
+                        function set(c) {
+                            if (on[c]) {
+                                $('#c' + c).show();
+                                $('#o' + c).hide();
+                                $('#t' + c).text('−');
+                            } else {
+                                $('#o' + c).show();
+                                $('#c' + c).hide();
+                                $('#t' + c).text('+');
+                            }
+                        };
+
                         $('.tag').each(function() {
                             var t = $(this);
                             var c = t.data('c');
                             if (c === void(0))
                                 return;
-                            var i = $('#c' + c).hide();
+                            all.push(c);
+                            $('#c' + c).hide();
                             var o = $('#o' + c);
-                            var btn = $(""<a href='#' class='button'>"").text('+').prependTo(t);
-                            var on = c === 0;
-                            var set = function() {
-                                if (on) {
-                                    i.show();
-                                    o.hide();
-                                    btn.text('−');
-                                } else {
-                                    i.hide();
-                                    o.show();
-                                    btn.text('+');
-                                }
-                            };
+                            var btn = $(""<a href='#' class='button'>"").attr('id', 't' + c).text('+').prependTo(t);
                             btn.click(function() {
-                                on = !on;
-                                set();
+                                on[c] = !(on[c] || false);
+                                set(c);
                                 return false;
                             });
-                            set();
+                            set(c);
+                        });
+
+                        $('#xml-expand-all, #xml-collapse-all').click(function()
+                        {
+                            if ($(this).is('#xml-collapse-all'))
+                                on = {};
+                            else
+                                for (var i = 0; i < all.length; i++)
+                                    on[i] = true;
+                            for (var i = 0; i < all.length; i++)
+                                set(all[i]);
+                            return false;
                         });
                     });
                 ";
@@ -172,6 +194,7 @@ namespace Tuulbox.Tools
             get
             {
                 return @"
+                    #xml-main { position: relative; }
                     .tag { font-size: 15pt; margin: .2em 0; position: relative; white-space: nowrap; }
                     .tagname { color: #00f; }
                     .attributes { display: inline-table; vertical-align: top; font-size: 12pt; }

@@ -103,6 +103,7 @@ pre { margin: 0; }
 .error .indicator:before { content: '^'; position: relative; left: -50%; top: 1.4em; }
 
 code { background: rgba(0, 0, 0, .05); padding: .05em .2em; border: 1px solid rgba(0, 0, 0, .1); }
+.controls { position: absolute; top: -1em; right: 0; text-align: right; }
 ".ToUtf8();
 
         object ITuul.Handle(TuulboxModule module, HttpRequest req)

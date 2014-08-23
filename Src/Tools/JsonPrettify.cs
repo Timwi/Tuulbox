@@ -27,8 +27,15 @@ namespace Tuulbox.Tools
                 try
                 {
                     var parsed = JsonValue.Parse(input);
-                    html = Ut.NewArray<object>(
+                    html = new DIV { id = "json-main" }._(
                         new H3("Browsable"),
+                        new DIV { class_ = "controls" }._(
+                            new DIV(
+                                new A { href = "#", id = "json-expand-all", accesskey = "e" }._(Helpers.TextWithAccessKey("Expand all", "e")),
+                                " | ",
+                                new A { href = "#", id = "json-collapse-all", accesskey = "c" }._(Helpers.TextWithAccessKey("Collapse all", "c"))
+                            )
+                        ),
                         new JsonHtmlifier(parsed).Html,
                         new H3("Beautified"),
                         new PRE(JsonValue.ToStringIndented(parsed)));
@@ -108,30 +115,45 @@ namespace Tuulbox.Tools
             {
                 return @"
                     $(function() {
+                        var on = { '0': true };
+                        var all = [];
+                        function set(c) {
+                            if (on[c]) {
+                                $('#b' + c).show();
+                                $('#c' + c).hide();
+                                $('#t' + c).text('−');
+                            } else {
+                                $('#c' + c).show();
+                                $('#b' + c).hide();
+                                $('#t' + c).text('+');
+                            }
+                        };
+
                         $('.json_list, .json_dict').each(function() {
                             var t = $(this);
                             var c = t.data('c');
-                            var b = $('#b' + c).hide();
+                            all.push(c);
+                            $('#b' + c).hide();
                             var o = $('#c' + c);
-                            var btn = $(""<a href='#' class='button'>"").text('+').insertBefore(o);
-                            var on = c === 0;
-                            var set = function() {
-                                if (on) {
-                                    b.show();
-                                    o.hide();
-                                    btn.text('−');
-                                } else {
-                                    o.show();
-                                    b.hide();
-                                    btn.text('+');
-                                }
-                            };
+                            var btn = $(""<a href='#' class='button'>"").attr('id', 't' + c).text('+').insertBefore(o);
                             btn.click(function() {
-                                on = !on;
-                                set();
+                                on[c] = !(on[c] || false);
+                                set(c);
                                 return false;
                             });
-                            set();
+                            set(c);
+                        });
+
+                        $('#json-expand-all, #json-collapse-all').click(function()
+                        {
+                            if ($(this).is('#json-collapse-all'))
+                                on = {};
+                            else
+                                for (var i = 0; i < all.length; i++)
+                                    on[i] = true;
+                            for (var i = 0; i < all.length; i++)
+                                set(all[i]);
+                            return false;
                         });
                     });
                 ";
@@ -143,6 +165,7 @@ namespace Tuulbox.Tools
             get
             {
                 return @"
+                    #json-main { position: relative; }
                     .button { font-size: 9pt; border: 1px solid #888; border-radius: 1em; padding: 0 .5em; text-decoration: none; margin: 0 .4em; }
                     blockquote { margin: 0 0 0 1.5em; }
                     .brackets { font-weight: bold; font-size: 110%; }
