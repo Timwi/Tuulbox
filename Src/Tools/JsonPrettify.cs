@@ -108,31 +108,27 @@ namespace Tuulbox.Tools
             {
                 return @"
                     $(function() {
-                        var open = window.location.hash.substr(1).split(',').reduce(function(p, n) { if (n.length) p[n] = true; return p; }, {});
                         $('.json_list, .json_dict').each(function() {
                             var t = $(this);
                             var c = t.data('c');
                             var b = $('#b' + c).hide();
                             var o = $('#c' + c);
                             var btn = $(""<a href='#' class='button'>"").text('+').insertBefore(o);
-                            var on = open[c] || false;
+                            var on = c === 0;
                             var set = function() {
                                 if (on) {
                                     b.show();
                                     o.hide();
                                     btn.text('−');
-                                    open[c] = true;
                                 } else {
                                     o.show();
                                     b.hide();
                                     btn.text('+');
-                                    delete open[c];
                                 }
                             };
                             btn.click(function() {
                                 on = !on;
                                 set();
-                                window.location.hash = '#' + Object.keys(open).join(',');
                                 return false;
                             });
                             set();

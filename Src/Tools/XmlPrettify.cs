@@ -135,7 +135,6 @@ namespace Tuulbox.Tools
             {
                 return @"
                     $(function() {
-                        var open = window.location.hash.substr(1).split(',').reduce(function(p, n) { if (n.length) p[n] = true; return p; }, {});
                         $('.tag').each(function() {
                             var t = $(this);
                             var c = t.data('c');
@@ -144,24 +143,21 @@ namespace Tuulbox.Tools
                             var i = $('#c' + c).hide();
                             var o = $('#o' + c);
                             var btn = $(""<a href='#' class='button'>"").text('+').prependTo(t);
-                            var on = open[c] || false;
+                            var on = c === 0;
                             var set = function() {
                                 if (on) {
                                     i.show();
                                     o.hide();
                                     btn.text('−');
-                                    open[c] = true;
                                 } else {
                                     i.hide();
                                     o.show();
                                     btn.text('+');
-                                    delete open[c];
                                 }
                             };
                             btn.click(function() {
                                 on = !on;
                                 set();
-                                window.location.hash = '#' + Object.keys(open).join(',');
                                 return false;
                             });
                             set();
