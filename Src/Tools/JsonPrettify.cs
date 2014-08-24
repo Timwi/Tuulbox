@@ -82,7 +82,7 @@ namespace Tuulbox.Tools
                 else if (elem is JsonString)
                     return new SPAN { class_ = "json_string" }._(elem.ToString());
                 else if (elem is JsonNumber)
-                    return new SPAN { class_ = "json_number" }._(elem.ToString());
+                    return new SPAN { class_ = "json_number", title = elem.GetIntSafe().NullOr(i => "= 0x" + i.ToString("X")) }._(elem.ToString());
 
                 var list = elem as JsonList;
                 var dict = elem as JsonDict;
