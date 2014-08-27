@@ -10,7 +10,7 @@ namespace Tuulbox.Tools
     {
         bool ITuul.Enabled { get { return true; } }
         bool ITuul.Listed { get { return true; } }
-        string ITuul.Name { get { return "Colors"; } }
+        string ITuul.Name { get { return "Convert RGB/HSL/color names"; } }
         string ITuul.UrlName { get { return "colors"; } }
         string ITuul.Keywords { get { return "color colour colors colours css name names rgb to hsl hex hexadecimal convert conversion"; } }
         string ITuul.Description { get { return "Converts CSS color values between RGB, HSL, and color names."; } }
