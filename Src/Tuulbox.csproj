@@ -52,6 +52,7 @@
     <Compile Include="Js.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Regexes\ParseException.cs" />
+    <Compile Include="Tools\Colors.cs" />
     <Compile Include="Tools\Diff.cs" />
     <Compile Include="Tools\Impressum.cs" />
     <Compile Include="Tools\JsonPrettify.cs" />

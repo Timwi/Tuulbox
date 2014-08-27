@@ -43,6 +43,7 @@ textarea {
     width: 100%;
     height: 15em;
 }
+textarea, input { font: inherit; }
 .tuulname { font-weight: bold; }
 .explain { color: #888; margin: .2em 0 .7em 2em; font-size: 80%; }
 
