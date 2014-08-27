@@ -21,25 +21,42 @@ namespace Tuulbox.Tools
                 new TABLE(
                     new COL(), new COL(), new COL(), new COL(), new COL { class_ = "colors_big" },
                     new TR(
-                        new TD(Helpers.LabelWithAccessKey("Red", "e", "colors_red")), new TD(new INPUT { type = itype.number, min = "0", max = "255", id = "colors_red", name = "red", value = "0" }),
-                        new TD(Helpers.LabelWithAccessKey("Hue", "u", "colors_hue")), new TD(new INPUT { type = itype.number, min = "0", max = "359", id = "colors_hue", name = "hue", value = "0" }),
+                        new TD(Helpers.LabelWithAccessKey("Red:", "d", "colors_red")), new TD(new INPUT { type = itype.number, min = "0", max = "255", id = "colors_red", name = "red", value = "0" }),
+                        new TD(Helpers.LabelWithAccessKey("Hue:", "u", "colors_hue")), new TD(new INPUT { type = itype.number, min = "0", max = "359", id = "colors_hue", name = "hue", value = "0" }),
                         new TD { rowspan = 5, id = "colors_color" }),
                     new TR(
-                        new TD(Helpers.LabelWithAccessKey("Green", "g", "colors_green")), new TD(new INPUT { type = itype.number, min = "0", max = "255", id = "colors_green", name = "green", value = "0" }),
-                        new TD(Helpers.LabelWithAccessKey("Saturation", "s", "colors_saturation")), new TD(new INPUT { type = itype.number, step = "0.001", min = "0", max = "1", id = "colors_saturation", name = "saturation", value = "0" })),
+                        new TD(Helpers.LabelWithAccessKey("Green:", "g", "colors_green")), new TD(new INPUT { type = itype.number, min = "0", max = "255", id = "colors_green", name = "green", value = "0" }),
+                        new TD(Helpers.LabelWithAccessKey("Saturation:", "s", "colors_saturation")), new TD(new INPUT { type = itype.number, step = "0.001", min = "0", max = "1", id = "colors_saturation", name = "saturation", value = "0" })),
                     new TR(
-                        new TD(Helpers.LabelWithAccessKey("Blue", "b", "colors_blue")), new TD(new INPUT { type = itype.number, min = "0", max = "255", id = "colors_blue", name = "blue", value = "0" }),
-                        new TD(Helpers.LabelWithAccessKey("Lightness", "l", "colors_lightness")), new TD(new INPUT { type = itype.number, step = "0.001", min = "0", max = "1", id = "colors_lightness", name = "lightness", value = "0" })),
+                        new TD(Helpers.LabelWithAccessKey("Blue:", "b", "colors_blue")), new TD(new INPUT { type = itype.number, min = "0", max = "255", id = "colors_blue", name = "blue", value = "0" }),
+                        new TD(Helpers.LabelWithAccessKey("Lightness:", "l", "colors_lightness")), new TD(new INPUT { type = itype.number, step = "0.001", min = "0", max = "1", id = "colors_lightness", name = "lightness", value = "0" })),
                     new TR(
-                        new TD(Helpers.LabelWithAccessKey("RGB", "r", "colors_rgb")), new TD(new INPUT { type = itype.text, id = "colors_rgb", name = "rgb", value = "rgb(0, 0, 0)" }),
-                        new TD(Helpers.LabelWithAccessKey("HSL", "h", "colors_hsl")), new TD(new INPUT { type = itype.text, id = "colors_hsl", name = "hsl", value = "hsl(0, 0, 0)" })),
+                        new TD(Helpers.LabelWithAccessKey("RGB:", "r", "colors_rgb")), new TD(new INPUT { type = itype.text, id = "colors_rgb", name = "rgb", value = "rgb(0, 0, 0)" }),
+                        new TD(Helpers.LabelWithAccessKey("HSL:", "h", "colors_hsl")), new TD(new INPUT { type = itype.text, id = "colors_hsl", name = "hsl", value = "hsl(0, 0, 0)" })),
                     new TR(
-                        new TD(Helpers.LabelWithAccessKey("Hex", "x", "colors_hex")), new TD(new INPUT { type = itype.text, id = "colors_hex", name = "hex", value = "#000" }),
-                        new TD(Helpers.LabelWithAccessKey("Name", "n", "colors_name")),
+                        new TD(Helpers.LabelWithAccessKey("Hex:", "e", "colors_hex")), new TD(new INPUT { type = itype.text, id = "colors_hex", name = "hex", value = "#000" }),
+                        new TD(Helpers.LabelWithAccessKey("Name:", "n", "colors_name")),
                         new TD(
                             new SELECT { id = "colors_name", name = "name" }._(
-                                new OPTION { value = "" }._("(none)").Concat(_names.Select(kvp => new OPTION { value = kvp.Value, selected = kvp.Key == "Black" }._(kvp.Key))))))));
+                                new OPTION { value = "" }._("(none)").Concat(_names.Select(kvp => new OPTION { value = kvp.Value, selected = kvp.Key == "Black" }._(kvp.Key))))))),
+                    new HR(),
+                    new DIV(
+                        Helpers.LabelWithAccessKey("X:", "x", "colors_x"), " ", new SELECT { id = "colors_x" }._(_sortableCriteria.Select(kvp => new OPTION { value = kvp.Key, selected = kvp.Key == "r" }._(kvp.Value))), " ",
+                        Helpers.LabelWithAccessKey("Y:", "y", "colors_y"), " ", new SELECT { id = "colors_y" }._(_sortableCriteria.Select(kvp => new OPTION { value = kvp.Key, selected = kvp.Key == "g" }._(kvp.Value)))),
+                    new TABLE { id = "colors_table" }._(
+                        Enumerable.Range(0, 20).Select(row => new TR(
+                            Enumerable.Range(0, 7).Select(cell => new TD { id = "colors_display_" + (7 * row + cell) })))));
         }
+
+        static Dictionary<string, string> _sortableCriteria = new Dictionary<string, string>
+        {
+            { "r", "Red" },
+            { "g", "Green" },
+            { "b", "Blue" },
+            { "h", "Hue" },
+            { "s", "Saturation" },
+            { "l", "Lightness" }
+        };
 
         string ITuul.Js
         {
@@ -60,6 +77,30 @@ $(function()
         $('#colors_hue').val(h);
         $('#colors_saturation').val(s);
         $('#colors_lightness').val(l);
+
+        if (skipRgb)
+            return;
+        var c = (1 - Math.abs(2*l - 1)) * s;
+        var x = c * (1 - Math.abs((h/60) % 2 - 1));
+        var m = l - c/2;
+        var rgb$ =
+            h < 60 ? [ c, x, 0 ] :
+            h < 120 ? [ x, c, 0 ] :
+            h < 180 ? [ 0, c, x ] :
+            h < 240 ? [ 0, x, c ] :
+            h < 300 ? [ x, 0, c ] : [ c, 0, x ];
+        setRgb(Math.round(255 * (rgb$[0] + m)), Math.round(255 * (rgb$[1] + m)), Math.round(255 * (rgb$[2] + m)), true);
+    }
+
+    function rgbToHsl(r, g, b)
+    {
+        var r$ = r/255, g$ = g/255, b$ = b/255, cx = Math.max(r$, g$, b$), cn = Math.min(r$, g$, b$), d = cx-cn;
+        var h = d === 0 ? 0 :
+            (r > g && r > b) ? Math.floor(60 * (((g$ - b$)/d) % 6)) :
+            (g > r && g > b) ? Math.floor(60 * ((b$ - r$)/d + 2)) : Math.floor(60 * ((r$ - g$)/d + 4));
+        if (h < 0) h += 360;
+        var l = (cx + cn)/2;
+        return { h: h, s: d === 0 ? 0 : d/(1 - Math.abs(2*l - 1)), l: l };
     }
 
     function setRgb(r, g, b, skipHsl, skipName)
@@ -80,14 +121,8 @@ $(function()
 
         if (skipHsl)
             return;
-        var r$ = r/255, g$ = g/255, b$ = b/255, cx = Math.max(r$, g$, b$), cn = Math.min(r$, g$, b$), d = cx-cn;
-        var h = d === 0 ? 0 :
-            (r > g && r > b) ? Math.floor(60 * (((g$ - b$)/d) % 6)) :
-            (g > r && g > b) ? Math.floor(60 * ((b$ - r$)/d + 2)) : Math.floor(60 * ((r$ - g$)/d + 4));
-        if (h < 0) h += 360;
-        var l = (cx + cn)/2;
-        var s = d === 0 ? 0 : d/(1 - Math.abs(2*l - 1));
-        setHsl(h, s, l, true);
+        var hsl = rgbToHsl(r, g, b);
+        setHsl(hsl.h, hsl.s, hsl.l, true);
     }
 
     $('#colors_red, #colors_green, #colors_blue').change(function()
@@ -117,17 +152,86 @@ $(function()
         setHsl(h, s, l);
     });
 
+    function hexToRgb(hex)
+    {
+        return {
+            r: hex.length === 4 ? 0x11 * parseInt(hex[1], 16) : parseInt(hex.substr(1, 2), 16),
+            g: hex.length === 4 ? 0x11 * parseInt(hex[2], 16) : parseInt(hex.substr(3, 2), 16),
+            b: hex.length === 4 ? 0x11 * parseInt(hex[3], 16) : parseInt(hex.substr(5, 2), 16)
+        };
+    }
+
     $('#colors_name').change(function()
     {
         var v = $('#colors_name').val();
         if (!v.length)
             return;
-        setRgb(
-            v.length === 4 ? 0x11 * parseInt(v[1], 16) : parseInt(v.substr(1, 2), 16),
-            v.length === 4 ? 0x11 * parseInt(v[2], 16) : parseInt(v.substr(3, 2), 16),
-            v.length === 4 ? 0x11 * parseInt(v[3], 16) : parseInt(v.substr(5, 2), 16),
-            false, true);
+        var rgb = hexToRgb(v);
+        setRgb(rgb.r, rgb.g, rgb.b, false, true);
     });
+
+    var allColorValues = $('#colors_name > option:not(:first-child)').map(function(i, e) {
+        var hex = $(e).val(), rgb = hexToRgb(hex), hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+        return { name: $(e).text(), hex: hex, r: rgb.r, g: rgb.g, b: rgb.b, h: hsl.h, s: hsl.s, l: hsl.l };
+    }).get();
+
+    function setXY(x, y)
+    {
+        var minX = null, maxX = null, minY = null, maxY = null;
+        var values = allColorValues.map(function(e)
+        {
+            minX = minX === null ? e[x] : Math.min(minX, e[x]);
+            maxX = maxX === null ? e[x] : Math.max(maxX, e[x]);
+            minY = minY === null ? e[y] : Math.min(minY, e[y]);
+            maxY = maxY === null ? e[y] : Math.max(maxY, e[y]);
+            return { x: e[x], y: e[y], hex: e.hex, name: e.name };
+        });
+        var assigned = {};
+        while (values.length)
+        {
+            var maxDist = null, maxIndex, maxI, maxJ;
+            for (var j = 0; j < 20; j++)
+            {
+                var yc = (maxY-minY) * j / 19 + minY;
+                for (var i = 0; i < 7; i++)
+                {
+                    if (assigned[i] && assigned[i][j])
+                        continue;
+                    var xc = (maxX-minX) * i / 6 + minX;
+                    var dist = null, index;
+                    for (var k = 0; k < values.length; k++)
+                    {
+                        var dx = values[k].x - xc, dy = values[k].y - yc;
+                        var d = dx*dx + dy*dy;
+                        if (dist === null || dist > d)
+                        {
+                            dist = d;
+                            index = k;
+                        }
+                    }
+                    if (maxDist === null || maxDist < dist)
+                    {
+                        maxDist = dist;
+                        maxIndex = index;
+                        maxI = i;
+                        maxJ = j;
+                    }
+                }
+            }
+            $('#colors_display_' + (7*maxJ + maxI)).css('background-color', values[maxIndex].hex).attr('data-name', values[maxIndex].name.replace(/[A-Z]/g, "" $&"").trim());
+            values.splice(maxIndex, 1);
+            (assigned[maxI] || (assigned[maxI] = {}))[maxJ] = true;
+        }
+    }
+
+    $('#colors_x, #colors_y').change(function()
+    {
+        var x = $('#colors_x').val(), y = $('#colors_y').val();
+        if (x === y)
+            $('#colors_y').val(y = (x === 'red' ? 'green' : 'red'));
+        setXY(x, y);
+    });
+    setXY('r', 'g');
 });
 
                 ";
@@ -143,6 +247,9 @@ $(function()
                     col.colors_big { width: 100%; }
                     td:not(#colors_color) { padding-right: .5em; }
                     #colors_color { background-color: black; }
+                    #colors_table > tbody > tr { height: 4em; }
+                    #colors_table > tbody > tr > td { text-align: center; }
+                    #colors_table > tbody > tr > td::before { content: attr(data-name); }
                 ";
             }
         }
