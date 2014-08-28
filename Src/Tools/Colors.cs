@@ -1,8 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using RT.KitchenSink.Geometry;
 using RT.Servers;
 using RT.TagSoup;
+using RT.Util;
 using RT.Util.ExtensionMethods;
+using RT.Util.Geometry;
 
 namespace Tuulbox.Tools
 {
@@ -43,9 +50,7 @@ namespace Tuulbox.Tools
                     new DIV(
                         Helpers.LabelWithAccessKey("X:", "x", "colors_x"), " ", new SELECT { id = "colors_x" }._(_sortableCriteria.Select(kvp => new OPTION { value = kvp.Key, selected = kvp.Key == "r" }._(kvp.Value))), " ",
                         Helpers.LabelWithAccessKey("Y:", "y", "colors_y"), " ", new SELECT { id = "colors_y" }._(_sortableCriteria.Select(kvp => new OPTION { value = kvp.Key, selected = kvp.Key == "g" }._(kvp.Value)))),
-                    new TABLE { id = "colors_table" }._(
-                        Enumerable.Range(0, 20).Select(row => new TR(
-                            Enumerable.Range(0, 7).Select(cell => new TD { id = "colors_display_" + (7 * row + cell) })))));
+                    _svgs);
         }
 
         static Dictionary<string, string> _sortableCriteria = new Dictionary<string, string>
@@ -96,8 +101,8 @@ $(function()
     {
         var r$ = r/255, g$ = g/255, b$ = b/255, cx = Math.max(r$, g$, b$), cn = Math.min(r$, g$, b$), d = cx-cn;
         var h = d === 0 ? 0 :
-            (r > g && r > b) ? Math.floor(60 * (((g$ - b$)/d) % 6)) :
-            (g > r && g > b) ? Math.floor(60 * ((b$ - r$)/d + 2)) : Math.floor(60 * ((r$ - g$)/d + 4));
+            (r >= g && r >= b) ? Math.floor(60 * (((g$ - b$)/d) % 6)) :
+            (g >= r && g >= b) ? Math.floor(60 * ((b$ - r$)/d + 2)) : Math.floor(60 * ((r$ - g$)/d + 4));
         if (h < 0) h += 360;
         var l = (cx + cn)/2;
         return { h: h, s: d === 0 ? 0 : d/(1 - Math.abs(2*l - 1)), l: l };
@@ -137,14 +142,15 @@ $(function()
             setRgb(+RegExp.$1, +RegExp.$2, +RegExp.$3);
     });
 
-    $('#colors_hex').change(function()
+    function setHex(hex)
     {
-        var v = $('#colors_hex').val();
-        if (/^\s*#?\s*([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])\s*$/.test(v))
+        if (/^\s*#?\s*([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])\s*$/.test(hex))
             setRgb(parseInt(RegExp.$1 + RegExp.$1, 16), parseInt(RegExp.$2 + RegExp.$2, 16), parseInt(RegExp.$3 + RegExp.$3, 16));
-        else if (/^\s*#?\s*([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})\s*$/.test(v))
+        else if (/^\s*#?\s*([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})\s*$/.test(hex))
             setRgb(parseInt(RegExp.$1, 16), parseInt(RegExp.$2, 16), parseInt(RegExp.$3, 16));
-    });
+    }
+
+    $('#colors_hex').change(function() { setHex($('#colors_hex').val()); });
 
     $('#colors_hue, #colors_saturation, #colors_lightness').change(function()
     {
@@ -177,61 +183,25 @@ $(function()
 
     function setXY(x, y)
     {
-        var minX = null, maxX = null, minY = null, maxY = null;
-        var values = allColorValues.map(function(e)
-        {
-            minX = minX === null ? e[x] : Math.min(minX, e[x]);
-            maxX = maxX === null ? e[x] : Math.max(maxX, e[x]);
-            minY = minY === null ? e[y] : Math.min(minY, e[y]);
-            maxY = maxY === null ? e[y] : Math.max(maxY, e[y]);
-            return { x: e[x], y: e[y], hex: e.hex, name: e.name };
-        });
-        var assigned = {};
-        while (values.length)
-        {
-            var maxDist = null, maxIndex, maxI, maxJ;
-            for (var j = 0; j < 20; j++)
-            {
-                var yc = (maxY-minY) * j / 19 + minY;
-                for (var i = 0; i < 7; i++)
-                {
-                    if (assigned[i] && assigned[i][j])
-                        continue;
-                    var xc = (maxX-minX) * i / 6 + minX;
-                    var dist = null, index;
-                    for (var k = 0; k < values.length; k++)
-                    {
-                        var dx = values[k].x - xc, dy = values[k].y - yc;
-                        var d = dx*dx + dy*dy;
-                        if (dist === null || dist > d)
-                        {
-                            dist = d;
-                            index = k;
-                        }
-                    }
-                    if (maxDist === null || maxDist < dist)
-                    {
-                        maxDist = dist;
-                        maxIndex = index;
-                        maxI = i;
-                        maxJ = j;
-                    }
-                }
-            }
-            $('#colors_display_' + (7*maxJ + maxI)).css('background-color', values[maxIndex].hex).attr('data-name', values[maxIndex].name.replace(/[A-Z]/g, "" $&"").trim());
-            values.splice(maxIndex, 1);
-            (assigned[maxI] || (assigned[maxI] = {}))[maxJ] = true;
-        }
+        $('svg').hide();
+        $('#' + x + '_' + y).show();
     }
 
     $('#colors_x, #colors_y').change(function()
     {
         var x = $('#colors_x').val(), y = $('#colors_y').val();
         if (x === y)
-            $('#colors_y').val(y = (x === 'red' ? 'green' : 'red'));
+            $('#colors_y').val(y = (x === 'r' ? 'g' : 'r'));
         setXY(x, y);
     });
+    $('svg').hide();
     setXY('r', 'g');
+
+    $('.poly').click(function()
+    {
+        setHex($(this).data('hex'));
+        return false;
+    });
 });
 
                 ";
@@ -247,9 +217,6 @@ $(function()
                     col.colors_big { width: 100%; }
                     td:not(#colors_color) { padding-right: .5em; }
                     #colors_color { background-color: black; }
-                    #colors_table > tbody > tr { height: 4em; }
-                    #colors_table > tbody > tr > td { text-align: center; }
-                    #colors_table > tbody > tr > td::before { content: attr(data-name); }
                 ";
             }
         }
@@ -397,5 +364,63 @@ $(function()
             { "Yellow", "#ff0" },
             { "YellowGreen", "#9acd32" },
         };
+
+        private static RawTag _svgsCache;
+        private static RawTag _svgs { get { return _svgsCache ?? (_svgsCache = generateSvgs()); } }
+
+        static RawTag generateSvgs()
+        {
+            var dic = new Dictionary<string, string>();
+            var rnd = new Random(1);
+
+            var colors = _names.Select(kvp =>
+            {
+                var r = int.Parse(kvp.Value.Length == 4 ? "" + kvp.Value[1] + kvp.Value[1] : kvp.Value.Substring(1, 2), NumberStyles.HexNumber);
+                var g = int.Parse(kvp.Value.Length == 4 ? "" + kvp.Value[2] + kvp.Value[2] : kvp.Value.Substring(3, 2), NumberStyles.HexNumber);
+                var b = int.Parse(kvp.Value.Length == 4 ? "" + kvp.Value[3] + kvp.Value[3] : kvp.Value.Substring(5, 2), NumberStyles.HexNumber);
+
+                double r_ = r / 255d, g_ = g / 255d, b_ = b / 255d, cx = Ut.Max(r_, g_, b_), cn = Ut.Min(r_, g_, b_), d = cx - cn;
+                var h = d == 0 ? 0 :
+                    (r >= g && r >= b) ? Math.Floor(60 * (((g_ - b_) / d) % 6)) :
+                    (g >= r && g >= b) ? Math.Floor(60 * ((b_ - r_) / d + 2)) : Math.Floor(60 * ((r_ - g_) / d + 4));
+                if (h < 0)
+                    h += 360;
+                var l = (cx + cn) / 2;
+                var s = d == 0 ? 0 : d / (1 - Math.Abs(2 * l - 1));
+
+                return new
+                {
+                    Name = kvp.Key,
+                    Dic = new Dictionary<string, double> { { "r", 10 * r }, { "g", 10 * g }, { "b", 10 * b }, { "h", h * 2550 / 360 }, { "s", s * 2550 }, { "l", l * 2550 } },
+                    R = r,
+                    G = g,
+                    B = b,
+                    Hex = kvp.Value
+                };
+            });
+
+            var svg = new StringBuilder();
+
+            foreach (var x in _sortableCriteria.Keys)
+                foreach (var y in _sortableCriteria.Keys)
+                {
+                    if (x == y)
+                        continue;
+
+                    var siteToInf = colors.ToDictionary(inf => new PointD(inf.Dic[x] + .5 + rnd.NextDouble(), inf.Dic[y] + .5 + rnd.NextDouble()));
+                    var diagram = VoronoiDiagram.GenerateVoronoiDiagram(siteToInf.Keys.ToArray(), new SizeF(2552, 2552), VoronoiDiagramFlags.IncludeEdgePolygons);
+
+                    svg.Append("<svg xmlns='http://www.w3.org/2000/svg' viewbox='0 0 2552 2552' width='100%' id='{0}_{1}'>".Fmt(x, y));
+                    foreach (var kvp in diagram.Polygons)
+                        svg.Append("<path class='poly' data-hex='{4}' style='fill:#{0:X2}{1:X2}{2:X2}' d='M {3} z'></path>".Fmt(
+                            /* {0}–{2} */ siteToInf[kvp.Key].R, siteToInf[kvp.Key].G, siteToInf[kvp.Key].B,
+                            /* {3} */ kvp.Value.Vertices.Select(p => Math.Round(p.X) + " " + Math.Round(p.Y)).JoinString(" "),
+                            /* {4} */ siteToInf[kvp.Key].Hex,
+                            /* {5} */ siteToInf[kvp.Key].Name));
+                    svg.Append("</svg>");
+                }
+
+            return new RawTag(svg.ToString());
+        }
     }
 }
