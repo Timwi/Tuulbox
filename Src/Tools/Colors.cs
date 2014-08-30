@@ -47,10 +47,11 @@ namespace Tuulbox.Tools
                             new SELECT { id = "colors_name", name = "name" }._(
                                 new OPTION { value = "" }._("(none)").Concat(_names.Select(kvp => new OPTION { value = kvp.Value, selected = kvp.Key == "Black" }._(kvp.Key))))))),
                     new HR(),
-                    new DIV(
+                    new DIV { id = "colors_xycontrols" }._(
                         Helpers.LabelWithAccessKey("X:", "x", "colors_x"), " ", new SELECT { id = "colors_x" }._(_sortableCriteria.Select(kvp => new OPTION { value = kvp.Key, selected = kvp.Key == "r" }._(kvp.Value))), " ",
                         Helpers.LabelWithAccessKey("Y:", "y", "colors_y"), " ", new SELECT { id = "colors_y" }._(_sortableCriteria.Select(kvp => new OPTION { value = kvp.Key, selected = kvp.Key == "g" }._(kvp.Value)))),
-                    _svgs);
+                    _svgs,
+                    new DIV { id = "colors_name_tag" });
         }
 
         static Dictionary<string, string> _sortableCriteria = new Dictionary<string, string>
@@ -194,14 +195,27 @@ $(function()
             $('#colors_y').val(y = (x === 'r' ? 'g' : 'r'));
         setXY(x, y);
     });
-    $('svg').hide();
     setXY('r', 'g');
 
-    $('.poly').click(function()
-    {
-        setHex($(this).data('hex'));
-        return false;
-    });
+    $('.poly')
+        .click(function()
+        {
+            setHex($(this).data('hex'));
+            return false;
+        })
+        .mouseenter(function()
+        {
+            var hex = $(this).data('hex');
+            $('#colors_name_tag').show().text($(this).data('name'));
+            $('#colors_name_tag').css({
+                left: $(this).position().left + this.getBoundingClientRect().width/2,
+                top: $(this).position().top + this.getBoundingClientRect().height/2
+            });
+        })
+        .mouseleave(function()
+        {
+            $('#colors_name_tag').hide();
+        });
 });
 
                 ";
@@ -217,6 +231,18 @@ $(function()
                     col.colors_big { width: 100%; }
                     td:not(#colors_color) { padding-right: .5em; }
                     #colors_color { background-color: black; }
+                    #colors_xycontrols { margin-bottom: .2em; }
+                    #colors_name_tag {
+                        display: none;
+                        position: absolute;
+                        border: 2px solid black;
+                        border-radius: .5em;
+                        box-shadow: 5px 5px 5px rgba(0, 0, 0, .3);
+                        background: white;
+                        padding: .5em 1em;
+                        pointer-events: none;
+                        transform: translate(-50%, -50%);
+                    }
                 ";
             }
         }
@@ -412,7 +438,7 @@ $(function()
 
                     svg.Append("<svg xmlns='http://www.w3.org/2000/svg' viewbox='0 0 2552 2552' width='100%' id='{0}_{1}'>".Fmt(x, y));
                     foreach (var kvp in diagram.Polygons)
-                        svg.Append("<path class='poly' data-hex='{4}' style='fill:#{0:X2}{1:X2}{2:X2}' d='M {3} z'></path>".Fmt(
+                        svg.Append("<path class='poly' data-hex='{4}' data-name='{5}' style='fill:#{0:X2}{1:X2}{2:X2}' d='M {3} z'></path>".Fmt(
                             /* {0}–{2} */ siteToInf[kvp.Key].R, siteToInf[kvp.Key].G, siteToInf[kvp.Key].B,
                             /* {3} */ kvp.Value.Vertices.Select(p => Math.Round(p.X) + " " + Math.Round(p.Y)).JoinString(" "),
                             /* {4} */ siteToInf[kvp.Key].Hex,
