@@ -70,6 +70,7 @@ $(function()
         [ 'start', '<h3>Beginning of line or string</h3><p>In multi-line mode, matches at the beginning of a line. Without multi-line mode, matches only at the beginning of the entire input string.</p>' ],
         [ 'end', '<h3>End of line or string</h3><p>In multi-line mode, matches at the end of a line. Without multi-line mode, matches either at the end of the entire input string, or before a <code>\\n</code> (newline) character at the end of the entire input string.</p>' ],
         [ 'namedbackref', '<h3>Named backreference</h3><p>Matches only the same text that was previously matched by the named capturing parenthesis with the same name.' ],
+        [ 'numberedbackref', '<h3>Numbered backreference</h3><p>Matches only the same text that was previously matched by the unnamed capturing parenthesis identified by the number. The first such capturing parenthesis has the number 1. They are ordered by where they start, so in the regular expression <code>((.).)</code>, <code>\\1</code> refers to the outer group, <code>\\2</code> to the inner.' ],
 
         [ 'characterclass', function(elem)
         {

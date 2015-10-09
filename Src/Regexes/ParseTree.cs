@@ -367,4 +367,12 @@ namespace Tuulbox.Regexes
         private NamedBackreference() { }
         public override object ToHtml() { return new SPAN { class_ = "node namedbackref" }.Data("name", Name)._(Source); }
     }
+
+    sealed class NumberedBackreference : Node
+    {
+        public long Number { get; private set; }
+        public NumberedBackreference(long number, string source, int index, int length) : base(source, index, length) { Number = number; }
+        private NumberedBackreference() { }
+        public override object ToHtml() { return new SPAN { class_ = "node numberedbackref" }.Data("number", Number)._(Source); }
+    }
 }

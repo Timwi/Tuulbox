@@ -40,7 +40,7 @@ namespace Tuulbox.Regexes
                             new S('v').Process(m => '\v'),
                             new S('x').ThenExpect(hexDigit.Times(2).Process(m => (char) Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\x"), " must be followed by two hexadecimal digits."))),
                             new S('u').ThenExpect(hexDigit.Times(4).Process(m => (char) Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))),
-                            new S(ch => ch >= '0' && ch <= '7').RepeatGreedy(1, 3).Process(m => (char) Convert.ToInt32(m.Match, 8)));
+                            new S('0').ThenExpect(new S(ch => ch >= '0' && ch <= '7').RepeatGreedy(1, 3), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\0"), " must be followed by octal digits (at least one, at most three)."))).Process(m => (char) Convert.ToInt32(m.Match, 8)));
 
                         var escapeCodeGroup = Stringerex.Ors(
                             new S('d').Process(m => EscapeCode.Digit),
@@ -65,9 +65,16 @@ namespace Tuulbox.Regexes
                                 new S('Q')
                                     .ThenExpect(S.Anything.Process(m => m.Match).Then(@"\E").Atomic(), m => new ParseException(m.Index - 1, m.Index + 1, new P("The ", new CODE(@"\Q"), " escape code introduces a literal that must be terminated with ", new CODE(@"\E"), ".")))
                                     .Process(m => new Func<int, int, Node>((index, length) => new LiteralNode(m.Result, m.OriginalSource, index, length, isQE: true))),
+                                new S(ch => ch >= '1' && ch <= '9').Then(new S(ch => ch >= '0' && ch <= '9').RepeatGreedy()).Process(m => new Func<int, int, Node>((index, length) => new NumberedBackreference(Convert.ToInt64(m.OriginalSource.Substring(index + 1, length - 1)), m.OriginalSource, index, length))),
                                 new S('k')
-                                    .ThenExpect(new S('<').Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>'), m => new ParseException(m.Index - 1, m.Index + 1, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ". The name must consist of letters and digits and start with a letter (e.g. ", new CODE(@"\k<url2>"), "), in which case it refers to a named capture (in this case, ", new CODE(@"(?<url2>...)"), ") or be entirely numerical (e.g. ", new CODE(@"\k<12>"), "), in which case it refers to an unnamed capture (in this case, the 12th).")))
-                                    .Process(m => new Func<int, int, Node>((index, length) => new NamedBackreference(m.Result, m.OriginalSource, index, length)))
+                                    .ThenExpect(new S('<').Then(
+                                        Stringerexes.IdentifierNoPunctuation.Process(m => (object) m.Match).Or(
+                                        Stringerexes.PositiveInteger.Cast<object>())
+                                    ).Then('>'), m => new ParseException(m.Index - 1, m.Index + 1, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ". The name must consist of letters and digits and start with a letter (e.g. ", new CODE(@"\k<url2>"), "), in which case it refers to a named capture (in this case, ", new CODE(@"(?<url2>...)"), ") or be entirely numerical (e.g. ", new CODE(@"\k<12>"), "), in which case it refers to an unnamed capture (in this case, the 12th).")))
+                                    .Process(m => new Func<int, int, Node>((index, length) => m.Result.IfType(
+                                        (long brNumber) => (Node) new NumberedBackreference(brNumber, m.OriginalSource, index, length),
+                                        (string brName) => (Node) new NamedBackreference(brName, m.OriginalSource, index, length),
+                                        @else => null)))
                             ),
                             m => new ParseException(m.Index, m.Index + m.Length, new P("Unrecognized escape code. I know about: ", "acefnrtvxudDsSwWAbBzZQk".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
                         ).Process(m => m.Result(m.Index, m.Length));
@@ -131,7 +138,7 @@ namespace Tuulbox.Regexes
 
                             // Option flags
                             new S("(?").Then(optionFlags).ThenRaw(new S('-').Then(optionFlags).OptionalGreedy(), (enable, disable) => new { Enable = enable, Disable = disable.FirstOrDefault() })
-                                .Do(m => m.Match.Contains('-') ? m.Result.Disable != 0 : m.Result.Enable != 0)
+                                .Where(m => m.Match.Contains('-') ? m.Result.Disable != 0 : m.Result.Enable != 0)
                                 .Then(':')
                                 .ThenRaw(generex, (inf, inner) => new { inf.Enable, inf.Disable, Inner = inner })
                                 .Process(m => new Func<int, int, Node>((index, length) => new FlagsParenthesisNode(m.Result.Enable, m.Result.Disable, m.Result.Inner, m.OriginalSource, index, length))),
