@@ -107,12 +107,12 @@
   <PropertyGroup>
     <PostBuildEvent>"$(TargetPath)" --post-build-check "$(SolutionDir)."
 if "$(ConfigurationName)"=="Release" (
-  xcopy /y "$(TargetPath)" D:\Propeller\Modules
-  xcopy /y "$(TargetDir)"Tuulbox.pdb D:\Propeller\Modules
-  xcopy /y "$(TargetDir)"RT.Generex.dll D:\Propeller\Modules
-  xcopy /y "$(TargetDir)"RT.KitchenSink.dll D:\Propeller\Modules
-  xcopy /y "$(TargetDir)"RT.Util.dll D:\Propeller\Modules
-  xcopy /y "$(TargetDir)"RT.TagSoup.dll D:\Propeller\Modules
+  xcopy /y /i "$(TargetPath)" D:\Propeller\Modules
+  xcopy /y /i "$(TargetDir)"Tuulbox.pdb D:\Propeller\Modules
+  xcopy /y /i "$(TargetDir)"RT.Generex.dll D:\Propeller\Modules
+  xcopy /y /i "$(TargetDir)"RT.KitchenSink.dll D:\Propeller\Modules
+  xcopy /y /i "$(TargetDir)"RT.Util.dll D:\Propeller\Modules
+  xcopy /y /i "$(TargetDir)"RT.TagSoup.dll D:\Propeller\Modules
 )
 </PostBuildEvent>
   </PropertyGroup>
