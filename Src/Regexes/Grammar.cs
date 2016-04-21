@@ -28,7 +28,7 @@ namespace Tuulbox.Regexes
                         var hexDigit = new S(ch => (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'));
 
                         var literal = new S(ch => !specialCharacters.Contains(ch)).RepeatGreedy(1).Process(m => (Node) new LiteralNode(m.Match, m.OriginalSource, m.Index, m.Length));
-                        var escapeCodeChar = Stringerex.Ors(
+                        var escapeCodeChar = Generex.Ors(
                             new S(ch => ch >= '{' || @"!""#$%&'()*+,-./:;<=>?@[\]^_`".Contains(ch)).Process(m => m.Match[0]),
                             new S('a').Process(m => '\a'),
                             new S('c').ThenExpect(new S(ch => ch >= 'A' && ch <= 'Z').Process(m => ((char) (m.Match[1] - 'A' + 1))), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\c"), " must be followed by a capital letter between A and Z."))),
@@ -42,7 +42,7 @@ namespace Tuulbox.Regexes
                             new S('u').ThenExpect(hexDigit.Times(4).Process(m => (char) Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))),
                             new S('0').ThenExpect(new S(ch => ch >= '0' && ch <= '7').RepeatGreedy(1, 3), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\0"), " must be followed by octal digits (at least one, at most three)."))).Process(m => (char) Convert.ToInt32(m.Match, 8)));
 
-                        var escapeCodeGroup = Stringerex.Ors(
+                        var escapeCodeGroup = Generex.Ors(
                             new S('d').Process(m => EscapeCode.Digit),
                             new S('D').Process(m => EscapeCode.NonDigit),
                             new S('s').Process(m => EscapeCode.SpaceCharacter),
@@ -52,9 +52,9 @@ namespace Tuulbox.Regexes
 
                         var backslash = new S('\\');
                         var escapeOutsideCharacterClass = backslash.ThenExpect(
-                            Stringerex.Ors(
+                            Generex.Ors(
                                 escapeCodeChar.Process(m => new Func<int, int, Node>((index, length) => new EscapedLiteralNode(m.Result.ToString(), m.OriginalSource, index, length))),
-                                Stringerex.Ors(
+                                Generex.Ors(
                                     new S('A').Process(m => EscapeCode.BeginningOfString),
                                     new S('b').Process(m => EscapeCode.WordBoundary),
                                     new S('B').Process(m => EscapeCode.NonWordBoundary),
@@ -82,7 +82,7 @@ namespace Tuulbox.Regexes
                         // In a character class, \b means “backspace character”
                         var charEscapeInCharacterClass = escapeCodeChar.Or(new S('b').Process(m => '\b'));
                         var escapeInCharacterClass = backslash.ThenExpect(
-                            Stringerex.Ors(
+                            Generex.Ors(
                                 charEscapeInCharacterClass.Process(m => CharacterClass.FromCharacter(m.Result)),
                                 escapeCodeGroup.Process(m => CharacterClass.FromEscape(m.Result))),
                             m => new ParseException(m.Index, m.Index + m.Length, new P("Unrecognized escape code. Inside of character classes, I know about: ", "acefnrtvxudDsSwWb".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
@@ -90,7 +90,7 @@ namespace Tuulbox.Regexes
 
                         var characterClass = new S("[^").Process(m => true).Or(new S('[').Process(m => false)).Atomic().ThenRaw(
                             // Accept a close-square-bracket at the beginning of the character class (e.g., []] is a valid class that matches ']').
-                            Stringerex.Ors(
+                            Generex.Ors(
 
                                 // Character range starting with a ']'
                                 new S("]-").Then(backslash.Then(charEscapeInCharacterClass).Or(S.Not(']', '\\').Process(m => m.Match[0])).Process(m => CharacterClass.FromTo(']', m.Result))),
@@ -98,7 +98,7 @@ namespace Tuulbox.Regexes
                                 // Just a ']'
                                 new S(']').Process(c => CharacterClass.FromCharacter(']')))
                             .OptionalGreedy()
-                            .ThenRaw(Stringerex.Ors(
+                            .ThenRaw(Generex.Ors(
 
                                 // Character ranges
                                 backslash.Then(charEscapeInCharacterClass).Or(S.Not('-', '\\').Process(m => m.Match[0]))
@@ -122,7 +122,7 @@ namespace Tuulbox.Regexes
                         var end = new S('$').Process(m => (Node) new EndNode(m.OriginalSource, m.Index, m.Length));
                         var any = new S('.').Process(m => (Node) new AnyNode(m.OriginalSource, m.Index, m.Length));
 
-                        var optionFlags = Stringerex.Ors(
+                        var optionFlags = Generex.Ors(
                             new S('i').Process(m => OptionFlags.IgnoreCase),
                             new S('m').Process(m => OptionFlags.Multiline),
                             new S('n').Process(m => OptionFlags.ExplicitCapture),
@@ -130,7 +130,7 @@ namespace Tuulbox.Regexes
                             new S('x').Process(m => OptionFlags.IgnoreWhitespace)
                         ).RepeatGreedy().ProcessRaw(opts => opts.Aggregate(OptionFlags.None, (acc, of) => acc | of));
 
-                        var parentheses = Stringerex.Ors(
+                        var parentheses = Generex.Ors(
                             // Named capturing groups
                             new S("(?<").Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>').Atomic()
                                 .ThenRaw(generex, (groupName, inner) => new { GroupName = groupName, Inner = inner })
@@ -144,7 +144,7 @@ namespace Tuulbox.Regexes
                                 .Process(m => new Func<int, int, Node>((index, length) => new FlagsParenthesisNode(m.Result.Enable, m.Result.Disable, m.Result.Inner, m.OriginalSource, index, length))),
 
                             // All types of parentheses that only have a type (and no other parameters)
-                            Stringerex.Ors(
+                            Generex.Ors(
                                 new S("(?:").Process(m => ParenthesisType.Grouping),
                                 new S("(?=").Process(m => ParenthesisType.PositiveLookAhead),
                                 new S("(?!").Process(m => ParenthesisType.NegativeLookAhead),
@@ -176,7 +176,7 @@ namespace Tuulbox.Regexes
                             .ThenExpect(')', m => new ParseException(m.Index, m.Index + 1, new P("You need to terminate this parenthesis with a ", new CODE(")"), ".")))
                             .Process(m => m.Result(m.Index, m.Length));
 
-                        var repeater = Stringerex.Ors(
+                        var repeater = Generex.Ors(
                             new S("*?").Process(m => new { Min = 0, Max = (int?) null, Greedy = Greediness.Nongreedy, Type = RepeaterType.Star }),
                             new S("*+").Process(m => new { Min = 0, Max = (int?) null, Greedy = Greediness.Atomic, Type = RepeaterType.Star }),
                             new S('*').Process(m => new { Min = 0, Max = (int?) null, Greedy = Greediness.Greedy, Type = RepeaterType.Star }),
@@ -202,7 +202,7 @@ namespace Tuulbox.Regexes
                                     new P("Some regular expression dialects allow this use of ", new CODE("{"), " and interpret it to match a literal ", new CODE("{"), " character. For compatibility, such use is discouraged. Use ", new CODE("\\{"), " instead if this is the intention.")
                                 ))
                             ).ThenExpectRaw(
-                                Stringerex.Ors(
+                                Generex.Ors(
                                     new S("}?").Process(m => Greediness.Nongreedy),
                                     new S("}+").Process(m => Greediness.Atomic),
                                     new S('}').Process(m => Greediness.Greedy)
@@ -211,7 +211,7 @@ namespace Tuulbox.Regexes
                                 m => new ParseException(m.Index, m.Index + m.Length, new P("You need to terminate this repeater with a ", new CODE("}"), ", ", new CODE("}?"), " or ", new CODE("}+"), "."))
                             )
                         ).Atomic();
-                        return Stringerex.Ors(literal, escapeOutsideCharacterClass, characterClass, start, end, any, parentheses,
+                        return Generex.Ors(literal, escapeOutsideCharacterClass, characterClass, start, end, any, parentheses,
                             S.Ors('?', '*', '+', '{').Throw<Node>(m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray(
                                 new P("You cannot place a repeater here. A repeater must be preceded by the element it applies to."),
                                 new P("If you intended for the character to match literally, precede it with a backslash, i.e.: ", new CODE("\\", m.Match)),

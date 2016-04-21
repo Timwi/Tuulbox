@@ -51,7 +51,7 @@ namespace Tuulbox.Tools
             {
                 return new FORM { method = method.post, action = req.Url.ToFull() }._(
                     new H3(Helpers.LabelWithAccessKey("XML", "x", "xml_xml")),
-                    new DIV(new TEXTAREA { name = "input", id = "xml_xml", accesskey = "," }._()),
+                    new DIV(new TEXTAREA { name = "input", id = "xml_xml", accesskey = "," }),
                     new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(Helpers.TextWithAccessKey("Go for it", "g")))
                 );
             }
