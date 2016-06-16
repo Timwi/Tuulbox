@@ -59,6 +59,7 @@
     <Compile Include="Tools\Colors.cs" />
     <Compile Include="Tools\Diff.cs" />
     <Compile Include="Tools\Impressum.cs" />
+    <Compile Include="Tools\PrettifierBase.cs" />
     <Compile Include="Tools\JsonPrettify.cs" />
     <Compile Include="TuulboxModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
