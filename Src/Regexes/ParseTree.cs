@@ -348,8 +348,8 @@ namespace Tuulbox.Regexes
         NonSpaceCharacter,    // \S
         WordCharacter,            // \w
         NonWordCharacter,    // \W
-        EndOfStringAlmost,    // \z
-        EndOfStringReally,      // \Z
+        EndOfStringAlmost,    // \Z
+        EndOfStringReally,      // \z
     }
 
     sealed class EscapeCodeNode : Node

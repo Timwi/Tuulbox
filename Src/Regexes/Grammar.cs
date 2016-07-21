@@ -58,8 +58,8 @@ namespace Tuulbox.Regexes
                                     new S('A').Process(m => EscapeCode.BeginningOfString),
                                     new S('b').Process(m => EscapeCode.WordBoundary),
                                     new S('B').Process(m => EscapeCode.NonWordBoundary),
-                                    new S('z').Process(m => EscapeCode.EndOfStringAlmost),
-                                    new S('Z').Process(m => EscapeCode.EndOfStringReally),
+                                    new S('z').Process(m => EscapeCode.EndOfStringReally),
+                                    new S('Z').Process(m => EscapeCode.EndOfStringAlmost),
                                     escapeCodeGroup
                                 ).Process(m => new Func<int, int, Node>((index, length) => new EscapeCodeNode(m.Result, m.OriginalSource, index, length))),
                                 new S('Q')
