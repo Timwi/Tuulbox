@@ -8,7 +8,7 @@ using RT.Util.Json;
 
 namespace Tuulbox.Regexes
 {
-    class SourceLocation
+    abstract class SourceLocation
     {
         public string OriginalSource { get; internal set; }
         public int Index { get; internal set; }
@@ -20,7 +20,7 @@ namespace Tuulbox.Regexes
         public int Column { get { return (_column ?? (_column = Index - OriginalSource.Substring(0, Index).LastIndexOf('\n'))).Value; } }
     }
 
-    class SourceSpan : SourceLocation
+    abstract class SourceSpan : SourceLocation
     {
         public int Length { get; internal set; }
         public int EndIndex { get { return Index + Length; } }
@@ -222,12 +222,14 @@ namespace Tuulbox.Regexes
         Capturing,
         NamedCapturing,
         Grouping,
+        BalancingGroup,
         PositiveLookAhead,
         NegativeLookAhead,
         PositiveLookBehind,
         NegativeLookBehind,
         Atomic,
-        Flags
+        Flags,
+        Conditional
     }
 
     class ParenthesisNode : OneChildNode
@@ -242,9 +244,18 @@ namespace Tuulbox.Regexes
     sealed class NamedParenthesisNode : ParenthesisNode
     {
         public string GroupName { get; private set; }
-        public NamedParenthesisNode(string name, Node child, string source, int index, int length)
-            : base(ParenthesisType.NamedCapturing, child, source, index, length) { GroupName = name; }
+        public NamedParenthesisNode(string name, Node child, string source, int index, int length, ParenthesisType? type = null)
+            : base(type ?? ParenthesisType.NamedCapturing, child, source, index, length) { GroupName = name; }
         protected override Tag addData(Tag tag) { return base.addData(tag).Data("groupname", GroupName); }
+    }
+
+    sealed class BalancingGroupNode : ParenthesisNode
+    {
+        public string Group1Name { get; private set; }
+        public string Group2Name { get; private set; }
+        public BalancingGroupNode(string name1, string name2, Node child, string source, int index, int length)
+            : base(ParenthesisType.BalancingGroup, child, source, index, length) { Group1Name = name1; Group2Name = name2; }
+        protected override Tag addData(Tag tag) { return base.addData(tag).Data("group1name", Group1Name).Data("group2name", Group2Name); }
     }
 
     [Flags]

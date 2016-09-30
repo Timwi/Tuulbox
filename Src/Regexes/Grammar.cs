@@ -131,10 +131,28 @@ namespace Tuulbox.Regexes
                         ).RepeatGreedy().ProcessRaw(opts => opts.Aggregate(OptionFlags.None, (acc, of) => acc | of));
 
                         var parentheses = Generex.Ors(
-                            // Named capturing groups
-                            new S("(?<").Then(Stringerexes.IdentifierNoPunctuation.Process(m => m.Match)).Then('>').Atomic()
+                            // Named capturing groups (?<foo>...)/(?'foo'...)
+                            new S("(?<").Then(Stringerexes.Identifier.Process(m => m.Match)).Then('>').Atomic()
+                                .Or(new S("(?'").Then(Stringerexes.Identifier.Process(m => m.Match)).Then('\'').Atomic())
                                 .ThenRaw(generex, (groupName, inner) => new { GroupName = groupName, Inner = inner })
                                 .Process(m => new Func<int, int, Node>((index, length) => new NamedParenthesisNode(m.Result.GroupName, m.Result.Inner, m.OriginalSource, index, length))),
+
+                            // Balancing groups (?<foo-bar>...)/(?'foo-bar'...)
+                            new S("(?<").Then(Stringerexes.Identifier.Process(m => m.Match)).Then('-').Then(Stringerexes.Identifier, (m1, m2) => new { Group1Name = m1, Group2Name = m2.Match }).Then('>').Atomic()
+                                .Or(new S("(?'").Then(Stringerexes.Identifier.Process(m => m.Match)).Then('-').Then(Stringerexes.Identifier, (m1, m2) => new { Group1Name = m1, Group2Name = m2.Match }).Then('\'').Atomic())
+                                .ThenRaw(generex, (inf, inner) => new { inf.Group1Name, inf.Group2Name, Inner = inner })
+                                .Process(m => new Func<int, int, Node>((index, length) => new BalancingGroupNode(m.Result.Group1Name, m.Result.Group2Name, m.Result.Inner, m.OriginalSource, index, length))),
+
+                            // Balancing groups (?<-bar>...)/(?'-bar'...)
+                            new S("(?<-").Then(Stringerexes.Identifier.Process(m => m.Match)).Then('>').Atomic()
+                                .Or(new S("(?'-").Then(Stringerexes.Identifier.Process(m => m.Match)).Then('\'').Atomic())
+                                .ThenRaw(generex, (groupName, inner) => new { GroupName = groupName, Inner = inner })
+                                .Process(m => new Func<int, int, Node>((index, length) => new BalancingGroupNode(null, m.Result.GroupName, m.Result.Inner, m.OriginalSource, index, length))),
+
+                            // Conditional (?(foo)...)
+                            new S("(?(").Then(Stringerexes.Identifier.Process(m => m.Match)).Then(')').Atomic()
+                                .ThenRaw(generex, (groupName, inner) => new { GroupName = groupName, Inner = inner })
+                                .Process(m => new Func<int, int, Node>((index, length) => new NamedParenthesisNode(m.Result.GroupName, m.Result.Inner, m.OriginalSource, index, length, ParenthesisType.Conditional))),
 
                             // Option flags
                             new S("(?").Then(optionFlags).ThenRaw(new S('-').Then(optionFlags).OptionalGreedy(), (enable, disable) => new { Enable = enable, Disable = disable.FirstOrDefault() })
@@ -154,14 +172,16 @@ namespace Tuulbox.Regexes
                                 new S("(?").Throw<ParenthesisType>(m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray<object>(
                                     new P("This construct is not valid. Valid constructs beginning with ", new CODE("(?"), " are:"),
                                     new UL(
-                                        new LI("Named capturing groups: ", new CODE("(?<name>...)"), " (name must consist of letters and digits and start with a letter)"),
-                                        new LI("Option flags: ", new CODE("(?imnsx-imnsx:...)"), "; for example, ", new CODE("(?s-i:...)"), " enables single-line mode and disables case-insensitivity for the inner expression."),
-                                        new LI("Non-capturing group: ", new CODE("(?:...)")),
-                                        new LI("Positive zero-width look-ahead: ", new CODE("(?=...)")),
-                                        new LI("Positive zero-width look-behind: ", new CODE("(?<=...)")),
-                                        new LI("Negative zero-width look-ahead: ", new CODE("(?!...)")),
-                                        new LI("Negative zero-width look-behind: ", new CODE("(?<!...)")),
-                                        new LI("Atomic subexpression: ", new CODE("(?>...)")))))),
+                                        new LI(new CODE("(?<name>...)"), ", ", new CODE("(?'name'...)"), ": named capturing groups (names must consist of letters and digits and start with a letter)"),
+                                        new LI(new CODE("(?<name1-name2>...)"), ", ", new CODE("(?'name1-name2'...)"), ": balanced capturing groups (", new CODE("name1"), " is optional)"),
+                                        new LI(new CODE("(?(name)...)"), ": conditional match"),
+                                        new LI(new CODE("(?imnsx-imnsx:...)"), ": option flags; for example, ", new CODE("(?s-i:...)"), " enables single-line mode and disables case-insensitivity for the inner expression"),
+                                        new LI(new CODE("(?:...)"), ": non-capturing group"),
+                                        new LI(new CODE("(?=...)"), ": positive zero-width look-ahead"),
+                                        new LI(new CODE("(?<=...)"), ": positive zero-width look-behind"),
+                                        new LI(new CODE("(?!...)"), ": negative zero-width look-ahead"),
+                                        new LI(new CODE("(?<!...)"), ": negative zero-width look-behind"),
+                                        new LI(new CODE("(?>...)"), ": atomic subexpression"))))),
                                 new S('(').Process(m => ParenthesisType.Capturing)
                             )
                                 .Atomic()

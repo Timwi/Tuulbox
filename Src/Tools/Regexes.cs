@@ -21,7 +21,7 @@ namespace Tuulbox.Tools
             get
             {
                 return @"
-#regex-show { color: black; font-size: 250%; white-space: pre; }
+#regex-show { color: black; font-size: 250%; white-space: pre-wrap; word-break: break-all; }
 #regex-show:hover .node { color: #ddd; }
 #regex-show:hover .node.innerhover:hover { color: #000; }
 #regex-show:hover .node.innerhover:hover .node { color: #68a; }
@@ -124,6 +124,12 @@ $(function()
                 case 'PositiveLookBehind': return '<h3>Positive zero-width look-behind assertion</h3><p>Checks if the text before the current position (i.e. the text matched by the regular expression so far, and possibly more text before that) matches the subexpression. If the subexpression matches, returns a zero-width match.<p>To check if the earlier text does <em>not</em> match the subexpression, use <code>(?&lt;!...)</code>.<p>To check if the <em>following</em> text matches the subexpression (look-<em>ahead</em>), use <code>(?=...)</code>.';
                 case 'NegativeLookBehind': return '<h3>Negative zero-width look-behind assertion</h3><p>Checks if the text before the current position (i.e. the text matched by the regular expression so far, and possibly more text before that) <em>does not</em> match the subexpression. If the subexpression does not match, returns a zero-width match.<p>To check if the earlier text <em>does</em> match the subexpression, use <code>(?&lt;=...)</code>.<p>To check if the <em>following</em> text does not match the subexpression (look-<em>ahead</em>), use <code>(?!...)</code>.';
                 case 'Atomic': return '<h3>Atomic match</h3><p>Allows the subexpression to use only the first match it finds. The subexpression can use backtracking to find that first match, but once it has found it, it must stick to it; if the rest of the regular expression (after the atomic operator) then does not match, the subexpression is not allowed to backtrack.';
+                case 'Conditional': return '<h3>Conditional match</h3><p>Matches the subexpression only if a group by the name “' + elem.data('groupname') + '” matched.';
+
+                case 'BalancingGroup': 
+                    var group1 = elem.data('group1name');
+                    return '<h3>Balancing group capture</h3><p>Enables the matching of balanced parentheses/brackets opened by the capturing group named “' + elem.data('group2name') + '”' +
+                        (group1 ? ' and gives the string matched by the subexpression the name “' + group1 + '”' : '') + '.';
 
                 case 'Flags':
                     var enable = elem.data('enable');
