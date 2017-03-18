@@ -30,23 +30,6 @@ namespace Tuulbox
         {
             var resolver = new UrlResolver();
             resolver.Add(new UrlHook("", Settings.UseDomain, specific: true), handler: req => handle(req, tuul));
-            var js = tuul.Js;
-            if (js != null)
-            {
-#if DEBUG
-                var jsBytes = js.ToUtf8();
-#else
-                var jsBytes = JsonValue.Fmt(js).ToUtf8();
-#endif
-                resolver.Add(new UrlHook("js", Settings.UseDomain, specific: true), handler: req => HttpResponse.JavaScript(jsBytes));
-            }
-            var css = tuul.Css;
-            if (css != null)
-            {
-                var cssBytes = css.ToUtf8();
-                resolver.Add(new UrlHook("css", Settings.UseDomain, specific: true), handler: req => HttpResponse.Css(cssBytes));
-            }
-
             return new UrlMapping(new UrlHook(tuul.UrlName ?? "", Settings.UseDomain), resolver.Handle);
         }
 
