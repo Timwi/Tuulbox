@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using RT.Generexes;
 using RT.TagSoup;
@@ -71,10 +70,9 @@ namespace Tuulbox.Regexes
                                         Stringerexes.IdentifierNoPunctuation.Process(m => (object) m.Match).Or(
                                         Stringerexes.PositiveInteger.Cast<object>())
                                     ).Then('>'), m => new ParseException(m.Index - 1, m.Index + 1, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ". The name must consist of letters and digits and start with a letter (e.g. ", new CODE(@"\k<url2>"), "), in which case it refers to a named capture (in this case, ", new CODE(@"(?<url2>...)"), ") or be entirely numerical (e.g. ", new CODE(@"\k<12>"), "), in which case it refers to an unnamed capture (in this case, the 12th).")))
-                                    .Process(m => new Func<int, int, Node>((index, length) => m.Result.IfType(
-                                        (long brNumber) => (Node) new NumberedBackreference(brNumber, m.OriginalSource, index, length),
-                                        (string brName) => (Node) new NamedBackreference(brName, m.OriginalSource, index, length),
-                                        @else => null)))
+                                    .Process(m => new Func<int, int, Node>((index, length) =>
+                                        m.Result is long brNumber ? new NumberedBackreference(brNumber, m.OriginalSource, index, length) :
+                                        m.Result is string brName ? new NamedBackreference(brName, m.OriginalSource, index, length) : (Node) null))
                             ),
                             m => new ParseException(m.Index, m.Index + m.Length, new P("Unrecognized escape code. I know about: ", "acefnrtvxudDsSwWAbBzZQk".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
                         ).Process(m => m.Result(m.Index, m.Length));
@@ -197,14 +195,14 @@ namespace Tuulbox.Regexes
                             .Process(m => m.Result(m.Index, m.Length));
 
                         var repeater = Generex.Ors(
-                            new S("*?").Process(m => new { Min = 0, Max = (int?) null, Greedy = Greediness.Nongreedy, Type = RepeaterType.Star }),
-                            new S("*+").Process(m => new { Min = 0, Max = (int?) null, Greedy = Greediness.Atomic, Type = RepeaterType.Star }),
-                            new S('*').Process(m => new { Min = 0, Max = (int?) null, Greedy = Greediness.Greedy, Type = RepeaterType.Star }),
-                            new S("+?").Process(m => new { Min = 1, Max = (int?) null, Greedy = Greediness.Nongreedy, Type = RepeaterType.Plus }),
-                            new S("++").Process(m => new { Min = 1, Max = (int?) null, Greedy = Greediness.Atomic, Type = RepeaterType.Plus }),
-                            new S('+').Process(m => new { Min = 1, Max = (int?) null, Greedy = Greediness.Greedy, Type = RepeaterType.Plus }),
-                            new S("??").Process(m => new { Min = 0, Max = (int?) 1, Greedy = Greediness.Nongreedy, Type = RepeaterType.Optional }),
-                            new S('?').Process(m => new { Min = 0, Max = (int?) 1, Greedy = Greediness.Greedy, Type = RepeaterType.Optional }),
+                            new S("*?").Process(m => new { Min = 0, Max = (int?) null, Greediness = Greediness.Nongreedy, Type = RepeaterType.Star }),
+                            new S("*+").Process(m => new { Min = 0, Max = (int?) null, Greediness = Greediness.Atomic, Type = RepeaterType.Star }),
+                            new S('*').Process(m => new { Min = 0, Max = (int?) null, Greediness = Greediness.Greedy, Type = RepeaterType.Star }),
+                            new S("+?").Process(m => new { Min = 1, Max = (int?) null, Greediness = Greediness.Nongreedy, Type = RepeaterType.Plus }),
+                            new S("++").Process(m => new { Min = 1, Max = (int?) null, Greediness = Greediness.Atomic, Type = RepeaterType.Plus }),
+                            new S('+').Process(m => new { Min = 1, Max = (int?) null, Greediness = Greediness.Greedy, Type = RepeaterType.Plus }),
+                            new S("??").Process(m => new { Min = 0, Max = (int?) 1, Greediness = Greediness.Nongreedy, Type = RepeaterType.Optional }),
+                            new S('?').Process(m => new { Min = 0, Max = (int?) 1, Greediness = Greediness.Greedy, Type = RepeaterType.Optional }),
                             new S('{').ThenExpect(
                                 matchedNumber.Then(',').ThenRaw(matchedNumber.OptionalGreedy().ProcessRaw(m => m.Cast<int?>().FirstOrDefault()), (min, max) => new { Min = min, Max = max, Type = max == null ? RepeaterType.Min : RepeaterType.MinMax })
                                     .Or(new S(',').Then(matchedNumber).ProcessRaw(max => new { Min = 0, Max = (int?) max, Type = RepeaterType.Max }))
@@ -227,7 +225,7 @@ namespace Tuulbox.Regexes
                                     new S("}+").Process(m => Greediness.Atomic),
                                     new S('}').Process(m => Greediness.Greedy)
                                 ).Atomic(),
-                                (minmax, greedy) => new { Min = minmax.Min, Max = minmax.Max, Greedy = greedy, Type = minmax.Type },
+                                (minmax, greediness) => new { minmax.Min, minmax.Max, Greediness = greediness, minmax.Type },
                                 m => new ParseException(m.Index, m.Index + m.Length, new P("You need to terminate this repeater with a ", new CODE("}"), ", ", new CODE("}?"), " or ", new CODE("}+"), "."))
                             )
                         ).Atomic();
@@ -238,7 +236,7 @@ namespace Tuulbox.Regexes
                                 m.Match == "{" ? new P("Some regular expression dialects allow this use of ", new CODE("{"), " and interpret it to match a literal ", new CODE("{"), " character. For compatibility, such use is discouraged. Use ", new CODE("\\{"), " instead if this is the intention.") : null
                             )))
                         ).Atomic()
-                            .Then(repeater.OptionalGreedy(), (child, repeat) => repeat.Result.Select(r => new RepeatOperatorNode(r.Type, r.Min, r.Max, r.Greedy, child, repeat.OriginalSource, child.Index, child.Length + repeat.Length)).DefaultIfEmpty(child).First())
+                            .Then(repeater.OptionalGreedy(), (child, repeat) => repeat.Result.Select(r => new RepeatOperatorNode(r.Type, r.Min, r.Max, r.Greediness, child, repeat.OriginalSource, child.Index, child.Length + repeat.Length)).DefaultIfEmpty(child).First())
                             .RepeatGreedy()
                             .Process(match => match.Result.ToArray().Apply(arr => arr.Length == 1 ? arr[0] : new ThenNode(arr, match.OriginalSource, match.Index, match.Length)))
                             .RepeatWithSeparatorGreedy('|')

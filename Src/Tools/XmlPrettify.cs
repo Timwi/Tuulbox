@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using RT.Servers;
 using RT.TagSoup;
 using RT.Util;
 using RT.Util.ExtensionMethods;
@@ -23,7 +22,7 @@ namespace Tuulbox.Tools
 
         private sealed class XmlHtmlifier
         {
-            private XElement _elem;
+            private readonly XElement _elem;
             private object _cache;
             private int _counter;
 
@@ -78,16 +77,18 @@ namespace Tuulbox.Tools
                         : anyContent
                             ? Ut.NewArray<object>(
                                 new SPAN { id = "c" + c }._(" ... "),
-                                new BLOCKQUOTE { id = "b" + c }._(elem.Nodes().Select(node => node.IfType(
-                                    (XElement subElem) => htmlify(subElem),
-                                    (XText text) =>
+                                new BLOCKQUOTE { id = "b" + c }._(elem.Nodes().Select(node =>
+                                {
+                                    if (node is XElement subElem)
+                                        return htmlify(subElem);
+                                    else if (node is XText text)
                                     {
                                         var newValue = text.Value.RemoveCommonIndentation().TrimStart('\r', '\n').TrimEnd();
                                         text.Value = newValue;
                                         return new SPAN { class_ = "xml_text" }._(newValue);
-                                    },
-                                    (XAttribute attr) => (object) null,
-                                    @elseObj => null))))
+                                    }
+                                    return (object) null;
+                                })))
                             : null,
                     anyContent ? Ut.NewArray(
                         new SPAN { class_ = "xml_brackets" }._("</"),
