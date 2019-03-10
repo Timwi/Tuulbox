@@ -61,6 +61,7 @@
     <Compile Include="Tools\Diff.cs" />
     <Compile Include="Tools\PrettifierBase.cs" />
     <Compile Include="Tools\JsonPrettify.cs" />
+    <Compile Include="Tools\Rotate.cs" />
     <Compile Include="TuulboxModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Regexes\Grammar.cs" />
@@ -69,7 +70,7 @@
     <Compile Include="Tools\List.cs" />
     <Compile Include="Tools\MakeTilable.cs" />
     <Compile Include="Tools\Regexes.cs" />
-    <Compile Include="Tools\Rotate.cs" />
+    <Compile Include="Tools\RankingComparison.cs" />
     <Compile Include="Skin.cs" />
     <Compile Include="Tools\XmlPrettify.cs" />
     <Compile Include="TuulboxSettings.cs" />
