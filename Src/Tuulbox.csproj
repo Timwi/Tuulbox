@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Tuulbox</RootNamespace>
     <AssemblyName>Tuulbox</AssemblyName>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -80,10 +80,6 @@
       <Project>{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}</Project>
       <Name>Generex</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\RT.Util\Src\RT.KitchenSink.csproj">
-      <Project>{7edb80b5-ca44-4ad9-bf23-18a9470feb69}</Project>
-      <Name>KitchenSink</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\RT.Servers\Src\RT.Servers.csproj">
       <Project>{A7333C19-56A9-4A8E-A196-7648666EF26A}</Project>
       <Name>Servers</Name>
@@ -92,20 +88,40 @@
       <Project>{8F80D916-8999-45D8-ACB2-FFA7E2698FD6}</Project>
       <Name>TagSoup</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\RT.Util\Src\RT.Util.csproj">
+    <ProjectReference Include="..\..\RT.Util\RT.Json\RT.Json.csproj">
+      <Project>{8d0fb386-9e33-4e17-9035-0a8718cf0082}</Project>
+      <Name>RT.Json</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\RT.Util\RT.PostBuild\RT.PostBuild.csproj">
+      <Project>{0b96d430-ae5a-4b6c-ab63-94f5e7a135ad}</Project>
+      <Name>RT.PostBuild</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\RT.Util\RT.Serialization.Json\RT.Serialization.Json.csproj">
+      <Project>{70c7fe69-db71-49ea-b597-c5cb248d4bb2}</Project>
+      <Name>RT.Serialization.Json</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\RT.Util\RT.Serialization\RT.Serialization.csproj">
+      <Project>{62d4c664-7b2a-46b0-bb97-4200ba3e40b0}</Project>
+      <Name>RT.Serialization</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\RT.Util\RT.Util.Core\RT.Util.Core.csproj">
       <Project>{8D0FE79C-AD8D-475C-9E6F-9CAE85365B5D}</Project>
-      <Name>Util</Name>
+      <Name>RT.Util.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Propeller\API\PropellerApi.csproj">
       <Project>{5770ee79-8340-41fb-9b8e-eb4a3c487ff1}</Project>
       <Name>PropellerApi</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\RT.Util\RT.Util\RT.Util.csproj">
+      <Project>{f6048d61-8d3d-4482-bfe9-dd903c8c6abc}</Project>
+      <Name>RT.Util</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>"$(TargetPath)" --post-build-check "$(SolutionDir)."</PostBuildEvent>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
