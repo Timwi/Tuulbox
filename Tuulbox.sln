@@ -1,18 +1,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29418.71
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32210.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tuulbox", "Src\Tuulbox.csproj", "{F675291C-DE5D-428C-81FB-1F84FA13D368}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RT.Util.Core", "..\RT.Util\RT.Util.Core\RT.Util.Core.csproj", "{8D0FE79C-AD8D-475C-9E6F-9CAE85365B5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RT.Servers", "..\RT.Servers\Src\RT.Servers.csproj", "{A7333C19-56A9-4A8E-A196-7648666EF26A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RT.Servers", "..\RT.Servers\Src\RT.Servers.csproj", "{A7333C19-56A9-4A8E-A196-7648666EF26A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RT.TagSoup", "..\RT.TagSoup\Src\RT.TagSoup.csproj", "{8F80D916-8999-45D8-ACB2-FFA7E2698FD6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generex", "..\Generex\Src\Generex.csproj", "{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PropellerApi", "..\Propeller\API\PropellerApi.csproj", "{5770EE79-8340-41FB-9B8E-EB4A3C487FF1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PropellerApi", "..\Propeller\API\PropellerApi.csproj", "{5770EE79-8340-41FB-9B8E-EB4A3C487FF1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RT.Json", "..\RT.Util\RT.Json\RT.Json.csproj", "{8D0FB386-9E33-4E17-9035-0A8718CF0082}"
 EndProject
@@ -70,8 +70,8 @@ Global
 		{70C7FE69-DB71-49EA-B597-C5CB248D4BB2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F6048D61-8D3D-4482-BFE9-DD903C8C6ABC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F6048D61-8D3D-4482-BFE9-DD903C8C6ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F6048D61-8D3D-4482-BFE9-DD903C8C6ABC}.Release|Any CPU.ActiveCfg = ReleaseUnsafe|Any CPU
-		{F6048D61-8D3D-4482-BFE9-DD903C8C6ABC}.Release|Any CPU.Build.0 = ReleaseUnsafe|Any CPU
+		{F6048D61-8D3D-4482-BFE9-DD903C8C6ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6048D61-8D3D-4482-BFE9-DD903C8C6ABC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0B96D430-AE5A-4B6C-AB63-94F5E7A135AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0B96D430-AE5A-4B6C-AB63-94F5E7A135AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0B96D430-AE5A-4B6C-AB63-94F5E7A135AD}.Release|Any CPU.ActiveCfg = Release|Any CPU

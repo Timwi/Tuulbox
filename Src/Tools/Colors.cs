@@ -33,13 +33,13 @@ namespace Tuulbox.Tools
                         new TD { rowspan = 5, id = "colors_color" }),
                     new TR(
                         new TD(Helpers.LabelWithAccessKey("Green:", "g", "colors_green")), new TD(new INPUT { type = itype.number, min = "0", max = "255", id = "colors_green", name = "green", value = "0" }),
-                        new TD(Helpers.LabelWithAccessKey("Saturation:", "s", "colors_saturation")), new TD(new INPUT { type = itype.number, step = "0.001", min = "0", max = "1", id = "colors_saturation", name = "saturation", value = "0" })),
+                        new TD(Helpers.LabelWithAccessKey("Saturation:", "s", "colors_saturation")), new TD(new INPUT { type = itype.number, step = "1", min = "0", max = "100", id = "colors_saturation", name = "saturation", value = "0" })),
                     new TR(
                         new TD(Helpers.LabelWithAccessKey("Blue:", "b", "colors_blue")), new TD(new INPUT { type = itype.number, min = "0", max = "255", id = "colors_blue", name = "blue", value = "0" }),
-                        new TD(Helpers.LabelWithAccessKey("Lightness:", "l", "colors_lightness")), new TD(new INPUT { type = itype.number, step = "0.001", min = "0", max = "1", id = "colors_lightness", name = "lightness", value = "0" })),
+                        new TD(Helpers.LabelWithAccessKey("Lightness:", "l", "colors_lightness")), new TD(new INPUT { type = itype.number, step = "1", min = "0", max = "100", id = "colors_lightness", name = "lightness", value = "0" })),
                     new TR(
                         new TD(Helpers.LabelWithAccessKey("RGB:", "r", "colors_rgb")), new TD(new INPUT { type = itype.text, id = "colors_rgb", name = "rgb", value = "rgb(0, 0, 0)" }),
-                        new TD(Helpers.LabelWithAccessKey("HSL:", "h", "colors_hsl")), new TD(new INPUT { type = itype.text, id = "colors_hsl", name = "hsl", value = "hsl(0, 0, 0)" })),
+                        new TD(Helpers.LabelWithAccessKey("HSL:", "h", "colors_hsl")), new TD(new INPUT { type = itype.text, id = "colors_hsl", name = "hsl", value = "hsl(0, 0%, 0%)" })),
                     new TR(
                         new TD(Helpers.LabelWithAccessKey("Hex:", "e", "colors_hex")), new TD(new INPUT { type = itype.text, id = "colors_hex", name = "hex", value = "#000" }),
                         new TD(Helpers.LabelWithAccessKey("Name:", "n", "colors_name")),
@@ -74,21 +74,20 @@ $(function()
 {
     function setHsl(h, s, l, skipRgb)
     {
-        if (h < 0 || s < 0 || l < 0 || h > 359 || s > 1 || l > 1)
-            return;
-        h = +h.toFixed(3);
-        s = +s.toFixed(3);
-        l = +l.toFixed(3);
-        $('#colors_hsl').val('hsl(' + h + ', ' + s + ', ' + l + ')');
+        h = Math.min(359, Math.max(0, h)) | 0;
+        s = Math.min(100, Math.max(0, s)) | 0;
+        l = Math.min(100, Math.max(0, l)) | 0;
+
+        $('#colors_hsl').val(`hsl(${h}, ${s}%, ${l}%)`);
         $('#colors_hue').val(h);
         $('#colors_saturation').val(s);
         $('#colors_lightness').val(l);
 
         if (skipRgb)
             return;
-        var c = (1 - Math.abs(2*l - 1)) * s;
+        var c = (1 - Math.abs(l/50 - 1)) * (s/100);
         var x = c * (1 - Math.abs((h/60) % 2 - 1));
-        var m = l - c/2;
+        var m = l/100 - c/2;
         var rgb$ =
             h < 60 ? [ c, x, 0 ] :
             h < 120 ? [ x, c, 0 ] :
@@ -106,14 +105,16 @@ $(function()
             (g >= r && g >= b) ? Math.floor(60 * ((b$ - r$)/d + 2)) : Math.floor(60 * ((r$ - g$)/d + 4));
         if (h < 0) h += 360;
         var l = (cx + cn)/2;
-        return { h: h, s: d === 0 ? 0 : d/(1 - Math.abs(2*l - 1)), l: l };
+        return { h: h, s: d === 0 ? 0 : d*100/(1 - Math.abs(2*l - 1)), l: l*100 };
     }
 
     function setRgb(r, g, b, skipHsl, skipName)
     {
-        if (r < 0 || g < 0 || b < 0 || r > 255 || g > 255 || b > 255)
-            return;
-        $('#colors_rgb').val('rgb(' + r + ', ' + g + ', ' + b + ')');
+        r = Math.min(255, Math.max(0, r)) | 0;
+        g = Math.min(255, Math.max(0, g)) | 0;
+        b = Math.min(255, Math.max(0, b)) | 0;
+
+        $('#colors_rgb').val(`rgb(${r}, ${g}, ${b})`);
         var rhex = ('0' + r.toString(16)).substr(-2), ghex = ('0' + g.toString(16)).substr(-2), bhex = ('0' + b.toString(16)).substr(-2);
         var hex = '#' + (rhex[0] === rhex[1] && ghex[0] === ghex[1] && bhex[0] === bhex[1] ? rhex[0] + ghex[0] + bhex[0] : rhex + ghex + bhex);
         $('#colors_hex').val(hex);
@@ -423,7 +424,7 @@ $(function()
                     B = b,
                     Hex = kvp.Value
                 };
-            });
+            }).ToArray();
 
             var svg = new StringBuilder();
 
@@ -433,16 +434,20 @@ $(function()
                     if (x == y)
                         continue;
 
-                    var siteToInf = colors.ToDictionary(inf => new PointD(inf.Dic[x] + .5 + rnd.NextDouble(), inf.Dic[y] + .5 + rnd.NextDouble()));
-                    var diagram = VoronoiDiagram.GenerateVoronoiDiagram(siteToInf.Keys.ToArray(), new SizeF(2552, 2552), VoronoiDiagramFlags.IncludeEdgePolygons);
+                    var sites = colors.Select(inf => new PointD(inf.Dic[x] + .5 + rnd.NextDouble(), inf.Dic[y] + .5 + rnd.NextDouble())).ToArray();
+                    var diagram = VoronoiDiagram.GenerateVoronoiDiagram(sites, 2552, 2552, VoronoiDiagramFlags.IncludeEdgePolygons);
 
                     svg.Append("<svg xmlns='http://www.w3.org/2000/svg' viewbox='0 0 2552 2552' width='100%' id='{0}_{1}'>".Fmt(x, y));
-                    foreach (var kvp in diagram.Polygons)
+                    for (var polyIx = 0; polyIx < diagram.Polygons.Length; polyIx++)
+                    {
+                        var kvp = diagram.Polygons[polyIx];
                         svg.Append("<path class='poly' data-hex='{4}' data-name='{5}' style='fill:#{0:X2}{1:X2}{2:X2}' d='M {3} z'></path>".Fmt(
-                            /* {0}–{2} */ siteToInf[kvp.Key].R, siteToInf[kvp.Key].G, siteToInf[kvp.Key].B,
-                            /* {3} */ kvp.Value.Vertices.Select(p => Math.Round(p.X) + " " + Math.Round(p.Y)).JoinString(" "),
-                            /* {4} */ siteToInf[kvp.Key].Hex,
-                            /* {5} */ siteToInf[kvp.Key].Name));
+                            /* {0}–{2} */ colors[polyIx].R, colors[polyIx].G, colors[polyIx].B,
+                            /* {3} */ kvp.Vertices.Select(p => Math.Round(p.X) + " " + Math.Round(p.Y)).JoinString(" "),
+                            /* {4} */ colors[polyIx].Hex,
+                            /* {5} */ colors[polyIx].Name));
+                    }
+
                     svg.Append("</svg>");
                 }
 
