@@ -19,7 +19,7 @@ namespace Tuulbox {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -63,7 +63,7 @@ namespace Tuulbox {
         /// <summary>
         ///   Looks up a localized string similar to $(function () {
         ///    function setHsl(h, s, l, skipRgb) {
-        ///        h = Math.min(359, Math.max(0, h)) | 0;
+        ///        h = ((h % 360 + 360) % 360) | 0;
         ///        s = Math.min(100, Math.max(0, s)) | 0;
         ///        l = Math.min(100, Math.max(0, l)) | 0;
         ///
@@ -73,13 +73,93 @@ namespace Tuulbox {
         ///        $(&apos;#colors_lightness&apos;).val(l);
         ///
         ///        if (skipRgb)
-        ///            return;
+        ///            return setCursorPosition();
         ///        var c = (1 - Math.abs(l / 50 - 1)) * (s / 100);
-        ///        var x = c * (1 - Math.abs [rest of string was truncated]&quot;;.
+        ///        var x = c * [rest of string was truncated]&quot;;.
         /// </summary>
-        public static string Colors {
+        public static string ColorsJs {
             get {
-                return ResourceManager.GetString("Colors", resourceCulture);
+                return ResourceManager.GetString("ColorsJs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to body {
+        ///    background: #eee;
+        ///    margin: -10px 0 0 0;
+        ///    font-family: &quot;&quot; Candara&quot;&quot;, &quot;&quot; Calibri&quot;&quot;, &quot;&quot; Tahoma&quot;&quot;, &quot;&quot; Verdana&quot;&quot;, &quot;&quot; Arial&quot;&quot;, sans-serif;
+        ///}
+        ///
+        ///.everything {
+        ///    max-width: 50em;
+        ///    margin: 0 auto 20px;
+        ///    background: white;
+        ///    box-shadow: 0 0 5px rgba(0, 0, 0, .5);
+        ///    padding: 3em;
+        ///    border-radius: 7px;
+        ///}
+        ///
+        ///.footer {
+        ///    padding: .5em;
+        ///    text-align: center;
+        ///}
+        ///
+        ///h1 {
+        ///    font-variant: small-caps;
+        ///    font-size: 47pt;
+        ///}
+        ///
+        ///div.search {
+        ///    float: right;
+        ///}
+        ///
+        ///.content { [rest of string was truncated]&quot;;.
+        /// </summary>
+        public static string MainCss {
+            get {
+                return ResourceManager.GetString("MainCss", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to $(function()
+        ///{
+        ///    $(&apos;.tab-control&apos;).each(function()
+        ///    {
+        ///        var tabcontrol = $(this);
+        ///        var tabs = tabcontrol.find(&apos;div.tabs &gt; a&apos;);
+        ///        var switchTab = function(lnk)
+        ///        {
+        ///            tabs.removeClass(&apos;selected&apos;);
+        ///            lnk.addClass(&apos;selected&apos;);
+        ///            tabcontrol.find(&apos;div.tab&apos;).hide();
+        ///            tabcontrol.find(&apos;div.tab#&apos; + lnk.data(&apos;tab&apos;)).show();
+        ///        };
+        ///        switchTab(tabcontrol.find(&apos;div.tabs &gt; a.selected&apos;));
+        ///        tabs.click(function()
+        ///        { [rest of string was truncated]&quot;;.
+        /// </summary>
+        public static string MainJs {
+            get {
+                return ResourceManager.GetString("MainJs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to $(function () {
+        ///    var $curTooltip = null;
+        ///
+        ///    var htmlEscape = function (str) {
+        ///        return str.replace(&apos;&amp;&apos;, &apos;&amp;amp;&apos;).replace(&apos;&lt;&apos;, &apos;&amp;lt;&apos;).replace(&apos;&gt;&apos;, &apos;&amp;gt;&apos;).replace(&apos;&quot;&quot;&apos;, &apos;&amp;quot;&apos;).replace(&quot;&quot;&apos;&quot;&quot;, &apos; &amp;#39; &apos;);
+        ///    };
+        ///
+        ///    var explains = [
+        ///        [&apos;then&apos;, &apos;&lt;h3&gt;Literal&lt;/h3&gt;&lt;p&gt;Matches the specified text.&lt;/p&gt;&apos;],
+        ///        [&apos;literal&apos;, function (elem) { return &apos;&lt;h3&gt;Literal&lt;/h3&gt;&lt;p&gt;Matches &apos; + htmlEscape(elem.data(&apos;text&apos;)) + &apos;.&apos; + (elem.data(&apos;isqe&apos;) ? &apos;&lt;p&gt;The &lt;code&gt;\\Q&lt;/code&gt;...&lt;code&gt;\\E&lt;/code&gt; opera [rest of string was truncated]&quot;;.
+        /// </summary>
+        public static string RegexesJs {
+            get {
+                return ResourceManager.GetString("RegexesJs", resourceCulture);
             }
         }
     }

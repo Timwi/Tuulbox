@@ -2,48 +2,20 @@
 using RT.Servers;
 using RT.Util.ExtensionMethods;
 
-namespace Tuulbox
+namespace Tuulbox;
+
+internal sealed class Js : ITuul
 {
-    sealed class Js : ITuul
-    {
-        private static byte[] _js = JsonValue.Fmt(@"
+    private static readonly byte[] _js = JsonValue.Fmt(Resources.MainJs).ToUtf8();
 
-$(function()
-{
-    $('.tab-control').each(function()
-    {
-        var tabcontrol = $(this);
-        var tabs = tabcontrol.find('div.tabs > a');
-        var switchTab = function(lnk)
-        {
-            tabs.removeClass('selected');
-            lnk.addClass('selected');
-            tabcontrol.find('div.tab').hide();
-            tabcontrol.find('div.tab#' + lnk.data('tab')).show();
-        };
-        switchTab(tabcontrol.find('div.tabs > a.selected'));
-        tabs.click(function()
-        {
-            switchTab($(this));
-            return false;
-        });
-    });
-});
+    object ITuul.Handle(TuulboxModule module, HttpRequest req) => HttpResponse.JavaScript(_js);
 
-").ToUtf8();
-
-        object ITuul.Handle(TuulboxModule module, HttpRequest req)
-        {
-            return HttpResponse.JavaScript(_js);
-        }
-
-        bool ITuul.Enabled { get { return true; } }
-        bool ITuul.Listed { get { return false; } }
-        string ITuul.Name { get { return null; } }
-        string ITuul.UrlName { get { return "js"; } }
-        string ITuul.Keywords { get { return null; } }
-        string ITuul.Description { get { return null; } }
-        string ITuul.Js { get { return null; } }
-        string ITuul.Css { get { return null; } }
-    }
+    bool ITuul.Enabled => true;
+    bool ITuul.Listed => false;
+    string ITuul.Name => null;
+    string ITuul.UrlName => "js";
+    string ITuul.Keywords => null;
+    string ITuul.Description => null;
+    string ITuul.Js => null;
+    string ITuul.Css => null;
 }

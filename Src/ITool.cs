@@ -1,18 +1,16 @@
-﻿using System;
-using RT.Servers;
+﻿using RT.Servers;
 
-namespace Tuulbox
+namespace Tuulbox;
+
+public interface ITuul
 {
-    public interface ITuul
-    {
-        bool Enabled { get; }
-        bool Listed { get; }
-        string Name { get; }
-        string UrlName { get; }
-        string Keywords { get; }
-        string Description { get; }
-        object Handle(TuulboxModule module, HttpRequest req);
-        string Js { get; }
-        string Css { get; }
-    }
+    bool Enabled { get; }
+    bool Listed { get; }
+    string Name { get; }
+    string UrlName { get; }
+    string Keywords { get; }
+    string Description { get; }
+    object Handle(TuulboxModule module, HttpRequest req);
+    string Js { get; }
+    string Css { get; }
 }

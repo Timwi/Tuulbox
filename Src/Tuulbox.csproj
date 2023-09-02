@@ -10,6 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Tuulbox</RootNamespace>
     <AssemblyName>Tuulbox</AssemblyName>
+    <LangVersion>latest</LangVersion>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -130,6 +131,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\Colors.js" />
+    <None Include="Resources\Main.css" />
+    <None Include="Resources\Main.js" />
+    <Content Include="Resources\Regexes.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
