@@ -89,6 +89,9 @@ internal sealed class Colors : ITuul
                     #pointer.grabbed {
                         cursor: grabbing;
                     }
+                    svg .edge {
+                        stroke-width: 2;
+                    }
                 ";
 
     public static ReadOnlyDictionary<string, string> _names = new(new Dictionary<string, string>()
@@ -282,6 +285,17 @@ internal sealed class Colors : ITuul
                 var diagram = VoronoiDiagram.GenerateVoronoiDiagram(sites, 2552, 2552, VoronoiDiagramFlags.IncludeEdgePolygons);
 
                 svg.Append("<g id='{0}_{1}'>".Fmt(x, y));
+                
+                for (var edgeIx = 0; edgeIx  < diagram.Edges.Count; edgeIx++)
+                {
+                    var edge = diagram.Edges[edgeIx];
+                    svg.Append("<path class='edge' stroke='#{0:X2}{1:X2}{2:X2}' d='M {3} {4} {5} {6}'></path>".Fmt(
+                            colors[edge.siteA].R, colors[edge.siteA].G, colors[edge.siteA].B,
+                            Math.Round(edge.edge.Start.X), Math.Round(edge.edge.Start.Y),
+                            Math.Round(edge.edge.End.X), Math.Round(edge.edge.End.Y)
+                        ));
+                }
+
                 for (var polyIx = 0; polyIx < diagram.Polygons.Length; polyIx++)
                 {
                     var kvp = diagram.Polygons[polyIx];
