@@ -69,7 +69,7 @@ internal sealed class RankingComparison : ITuul
                 new DIV("Header for second column: ", new INPUT { type = itype.text, name = "header2" }),
                 new DIV("Second list: (newline-separated; will form the right column; items must match items in first list precisely)"),
                 new TEXTAREA { name = "second" },
-                new DIV(new INPUT { type = itype.submit, value = "Generate" }),
+                new DIV(new BUTTON { type = btype.submit, accesskey = "g" }._(Helpers.TextWithAccessKey("Generate", "g"))),
                 new DIV("After generating, press Ctrl+S to save the page to your disk.")
             );
         }
