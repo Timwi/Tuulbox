@@ -15,12 +15,12 @@ namespace Tuulbox.Tools
 {
     sealed class Colors : ITuul
     {
-        bool ITuul.Enabled { get { return true; } }
-        bool ITuul.Listed { get { return true; } }
-        string ITuul.Name { get { return "Convert RGB/HSL/color names"; } }
-        string ITuul.UrlName { get { return "colors"; } }
-        string ITuul.Keywords { get { return "color colour colors colours css name names rgb to hsl hex hexadecimal convert conversion"; } }
-        string ITuul.Description { get { return "Converts CSS color values between RGB, HSL, and color names."; } }
+        bool ITuul.Enabled => true;
+        bool ITuul.Listed => true;
+        string ITuul.Name => "Convert RGB/HSL/color names";
+        string ITuul.UrlName => "colors";
+        string ITuul.Keywords => "color colour colors colours css name names rgb to hsl hex hexadecimal convert conversion";
+        string ITuul.Description => "Converts CSS color values between RGB, HSL, and color names.";
 
         object ITuul.Handle(TuulboxModule module, HttpRequest req)
         {
@@ -64,164 +64,7 @@ namespace Tuulbox.Tools
             { "l", "Lightness" }
         };
 
-        string ITuul.Js
-        {
-            get
-            {
-                return @"
-
-$(function()
-{
-    function setHsl(h, s, l, skipRgb)
-    {
-        h = Math.min(359, Math.max(0, h)) | 0;
-        s = Math.min(100, Math.max(0, s)) | 0;
-        l = Math.min(100, Math.max(0, l)) | 0;
-
-        $('#colors_hsl').val(`hsl(${h}, ${s}%, ${l}%)`);
-        $('#colors_hue').val(h);
-        $('#colors_saturation').val(s);
-        $('#colors_lightness').val(l);
-
-        if (skipRgb)
-            return;
-        var c = (1 - Math.abs(l/50 - 1)) * (s/100);
-        var x = c * (1 - Math.abs((h/60) % 2 - 1));
-        var m = l/100 - c/2;
-        var rgb$ =
-            h < 60 ? [ c, x, 0 ] :
-            h < 120 ? [ x, c, 0 ] :
-            h < 180 ? [ 0, c, x ] :
-            h < 240 ? [ 0, x, c ] :
-            h < 300 ? [ x, 0, c ] : [ c, 0, x ];
-        setRgb(Math.round(255 * (rgb$[0] + m)), Math.round(255 * (rgb$[1] + m)), Math.round(255 * (rgb$[2] + m)), true);
-    }
-
-    function rgbToHsl(r, g, b)
-    {
-        var r$ = r/255, g$ = g/255, b$ = b/255, cx = Math.max(r$, g$, b$), cn = Math.min(r$, g$, b$), d = cx-cn;
-        var h = d === 0 ? 0 :
-            (r >= g && r >= b) ? Math.floor(60 * (((g$ - b$)/d) % 6)) :
-            (g >= r && g >= b) ? Math.floor(60 * ((b$ - r$)/d + 2)) : Math.floor(60 * ((r$ - g$)/d + 4));
-        if (h < 0) h += 360;
-        var l = (cx + cn)/2;
-        return { h: h, s: d === 0 ? 0 : d*100/(1 - Math.abs(2*l - 1)), l: l*100 };
-    }
-
-    function setRgb(r, g, b, skipHsl, skipName)
-    {
-        r = Math.min(255, Math.max(0, r)) | 0;
-        g = Math.min(255, Math.max(0, g)) | 0;
-        b = Math.min(255, Math.max(0, b)) | 0;
-
-        $('#colors_rgb').val(`rgb(${r}, ${g}, ${b})`);
-        var rhex = ('0' + r.toString(16)).substr(-2), ghex = ('0' + g.toString(16)).substr(-2), bhex = ('0' + b.toString(16)).substr(-2);
-        var hex = '#' + (rhex[0] === rhex[1] && ghex[0] === ghex[1] && bhex[0] === bhex[1] ? rhex[0] + ghex[0] + bhex[0] : rhex + ghex + bhex);
-        $('#colors_hex').val(hex);
-        $('#colors_red').val(r);
-        $('#colors_green').val(g);
-        $('#colors_blue').val(b);
-        $('#colors_color').css('background-color', hex);
-
-        if (!skipName)
-            $('#colors_name').val(hex);
-
-        if (skipHsl)
-            return;
-        var hsl = rgbToHsl(r, g, b);
-        setHsl(hsl.h, hsl.s, hsl.l, true);
-    }
-
-    $('#colors_red, #colors_green, #colors_blue').change(function()
-    {
-        setRgb(+$('#colors_red').val(), +$('#colors_green').val(), +$('#colors_blue').val());
-    });
-
-    $('#colors_rgb').change(function()
-    {
-        var v = $('#colors_rgb').val();
-        if (/^\s*rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)\s*$/.test(v))
-            setRgb(+RegExp.$1, +RegExp.$2, +RegExp.$3);
-    });
-
-    function setHex(hex)
-    {
-        if (/^\s*#?\s*([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])\s*$/.test(hex))
-            setRgb(parseInt(RegExp.$1 + RegExp.$1, 16), parseInt(RegExp.$2 + RegExp.$2, 16), parseInt(RegExp.$3 + RegExp.$3, 16));
-        else if (/^\s*#?\s*([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})\s*$/.test(hex))
-            setRgb(parseInt(RegExp.$1, 16), parseInt(RegExp.$2, 16), parseInt(RegExp.$3, 16));
-    }
-
-    $('#colors_hex').change(function() { setHex($('#colors_hex').val()); });
-
-    $('#colors_hue, #colors_saturation, #colors_lightness').change(function()
-    {
-        var h = +$('#colors_hue').val(), s = +$('#colors_saturation').val(), l = +$('#colors_lightness').val();
-        setHsl(h, s, l);
-    });
-
-    function hexToRgb(hex)
-    {
-        return {
-            r: hex.length === 4 ? 0x11 * parseInt(hex[1], 16) : parseInt(hex.substr(1, 2), 16),
-            g: hex.length === 4 ? 0x11 * parseInt(hex[2], 16) : parseInt(hex.substr(3, 2), 16),
-            b: hex.length === 4 ? 0x11 * parseInt(hex[3], 16) : parseInt(hex.substr(5, 2), 16)
-        };
-    }
-
-    $('#colors_name').change(function()
-    {
-        var v = $('#colors_name').val();
-        if (!v.length)
-            return;
-        var rgb = hexToRgb(v);
-        setRgb(rgb.r, rgb.g, rgb.b, false, true);
-    });
-
-    var allColorValues = $('#colors_name > option:not(:first-child)').map(function(i, e) {
-        var hex = $(e).val(), rgb = hexToRgb(hex), hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-        return { name: $(e).text(), hex: hex, r: rgb.r, g: rgb.g, b: rgb.b, h: hsl.h, s: hsl.s, l: hsl.l };
-    }).get();
-
-    function setXY(x, y)
-    {
-        $('svg').hide();
-        $('#' + x + '_' + y).show();
-    }
-
-    $('#colors_x, #colors_y').change(function()
-    {
-        var x = $('#colors_x').val(), y = $('#colors_y').val();
-        if (x === y)
-            $('#colors_y').val(y = (x === 'r' ? 'g' : 'r'));
-        setXY(x, y);
-    });
-    setXY('r', 'g');
-
-    $('.poly')
-        .click(function()
-        {
-            setHex($(this).data('hex'));
-            return false;
-        })
-        .mouseenter(function()
-        {
-            var hex = $(this).data('hex');
-            $('#colors_name_tag').show().text($(this).data('name'));
-            $('#colors_name_tag').css({
-                left: $(this).position().left + this.getBoundingClientRect().width/2,
-                top: $(this).position().top + this.getBoundingClientRect().height/2
-            });
-        })
-        .mouseleave(function()
-        {
-            $('#colors_name_tag').hide();
-        });
-});
-
-                ";
-            }
-        }
+        string ITuul.Js => Resources.Colors;
 
         string ITuul.Css
         {
@@ -241,6 +84,17 @@ $(function()
                         box-shadow: 5px 5px 5px rgba(0, 0, 0, .3);
                         background: white;
                         padding: .5em 1em;
+                        pointer-events: none;
+                        transform: translate(-50%, -50%);
+                    }
+
+                    #pointer {
+                        position: absolute;
+                        width: .4cm;
+                        height: .4cm;
+                        border: 2px solid #fff;
+                        border-radius: .2cm;
+                        background: #000;
                         pointer-events: none;
                         transform: translate(-50%, -50%);
                     }
@@ -393,7 +247,7 @@ $(function()
         };
 
         private static RawTag _svgsCache;
-        private static RawTag _svgs { get { return _svgsCache ?? (_svgsCache = generateSvgs()); } }
+        private static RawTag _svgs => _svgsCache ?? (_svgsCache = generateSvgs());
 
         static RawTag generateSvgs()
         {
@@ -427,6 +281,7 @@ $(function()
             }).ToArray();
 
             var svg = new StringBuilder();
+            svg.Append("<svg xmlns='http://www.w3.org/2000/svg' viewbox='0 0 2552 2552' width='100%'>");
 
             foreach (var x in _sortableCriteria.Keys)
                 foreach (var y in _sortableCriteria.Keys)
@@ -437,20 +292,23 @@ $(function()
                     var sites = colors.Select(inf => new PointD(inf.Dic[x] + .5 + rnd.NextDouble(), inf.Dic[y] + .5 + rnd.NextDouble())).ToArray();
                     var diagram = VoronoiDiagram.GenerateVoronoiDiagram(sites, 2552, 2552, VoronoiDiagramFlags.IncludeEdgePolygons);
 
-                    svg.Append("<svg xmlns='http://www.w3.org/2000/svg' viewbox='0 0 2552 2552' width='100%' id='{0}_{1}'>".Fmt(x, y));
+                    svg.Append("<g id='{0}_{1}'>".Fmt(x, y));
                     for (var polyIx = 0; polyIx < diagram.Polygons.Length; polyIx++)
                     {
                         var kvp = diagram.Polygons[polyIx];
-                        svg.Append("<path class='poly' data-hex='{4}' data-name='{5}' style='fill:#{0:X2}{1:X2}{2:X2}' d='M {3} z'></path>".Fmt(
+                        svg.Append("<path class='poly' data-hex='{4}' data-name='{5}' fill='#{0:X2}{1:X2}{2:X2}' d='M {3} z'></path>".Fmt(
                             /* {0}–{2} */ colors[polyIx].R, colors[polyIx].G, colors[polyIx].B,
                             /* {3} */ kvp.Vertices.Select(p => Math.Round(p.X) + " " + Math.Round(p.Y)).JoinString(" "),
                             /* {4} */ colors[polyIx].Hex,
                             /* {5} */ colors[polyIx].Name));
                     }
 
-                    svg.Append("</svg>");
+                    svg.Append("</g>");
                 }
 
+
+            svg.Append("</svg>");
+            svg.Append("<div id='pointer'></div>");
             return new RawTag(svg.ToString());
         }
     }
