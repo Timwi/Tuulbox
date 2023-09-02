@@ -1,5 +1,5 @@
 ﻿$(function () {
-    function setHsl(h, s, l, skipRgb) {
+    function setHsl(h, s, l, skipRgb, noSnap) {
         h = ((h % 360 + 360) % 360) | 0;
         s = Math.min(100, Math.max(0, s)) | 0;
         l = Math.min(100, Math.max(0, l)) | 0;
@@ -10,7 +10,7 @@
         $('#colors_lightness').val(l);
 
         if (skipRgb)
-            return setCursorPosition();
+            return setCursor(noSnap);
         var c = (1 - Math.abs(l / 50 - 1)) * (s / 100);
         var x = c * (1 - Math.abs((h / 60) % 2 - 1));
         var m = l / 100 - c / 2;
@@ -20,7 +20,7 @@
                     h < 180 ? [0, c, x] :
                         h < 240 ? [0, x, c] :
                             h < 300 ? [x, 0, c] : [c, 0, x];
-        setRgb(Math.round(255 * (rgb$[0] + m)), Math.round(255 * (rgb$[1] + m)), Math.round(255 * (rgb$[2] + m)), true);
+        setRgb(Math.round(255 * (rgb$[0] + m)), Math.round(255 * (rgb$[1] + m)), Math.round(255 * (rgb$[2] + m)), true, false, noSnap);
     }
 
     function rgbToHsl(r, g, b) {
@@ -33,7 +33,7 @@
         return { h: h, s: d === 0 ? 0 : d * 100 / (1 - Math.abs(2 * l - 1)), l: l * 100 };
     }
 
-    function setRgb(r, g, b, skipHsl, skipName) {
+    function setRgb(r, g, b, skipHsl, skipName, noSnap) {
         r = Math.min(255, Math.max(0, r)) | 0;
         g = Math.min(255, Math.max(0, g)) | 0;
         b = Math.min(255, Math.max(0, b)) | 0;
@@ -51,9 +51,9 @@
             $('#colors_name').val(hex);
 
         if (skipHsl)
-            return setCursorPosition();
+            return setCursor(noSnap);
         var hsl = rgbToHsl(r, g, b);
-        setHsl(hsl.h, hsl.s, hsl.l, true);
+        setHsl(hsl.h, hsl.s, hsl.l, true, noSnap);
     }
 
     $('#colors_red, #colors_green, #colors_blue').change(function () {
@@ -111,18 +111,111 @@
     }).get();
 
     function setXY(x, y) {
-        $('svg>g').hide();
+        $('svg>g:not(#pointer)').hide();
         $('g#' + x + '_' + y).show();
-        setCursorPosition();
+        setCursor();
     }
 
-    function setCursorPosition() {
-        let svgPos = $("svg").position();
-        let svgRect = $("svg")[0].getBoundingClientRect();
-        $("#pointer").css({
-            left: getValueOnAxis($('#colors_x').val()) * svgRect.width + svgPos.left,
-            top: getValueOnAxis($('#colors_y').val()) * svgRect.height + svgPos.top
+    function setCursor(noSnap) {
+        $("#pointer").attr({
+            fill: $('#colors_rgb').val(),
+            stroke: $("#colors_lightness").val() > 50 ? "#000" : "#fff"
         });
+        if (!noSnap)
+            $("#pointer").attr({ transform: `translate(${getValueOnAxis($('#colors_x').val()) * 2552},${getValueOnAxis($('#colors_y').val()) * 2552})` });
+    }
+
+    (function makeDraggable(evt) {
+        var svg = $("svg");
+
+        svg.on('mousedown touchstart', startDrag);
+        svg.on('mousemove touchmove', drag);
+        svg.on('mouseup mouseleave touchend touchleave touchcancel', endDrag);
+
+        svg = svg[0];
+
+        var selectedElement, transform,
+            minX, maxX, minY, maxY;
+
+        var boundaryX1 = 0;
+        var boundaryX2 = 2552;
+        var boundaryY1 = 0;
+        var boundaryY2 = 2552;
+
+        function getMousePosition(evt) {
+            var CTM = svg.getScreenCTM();
+            if (evt.touches) { evt = evt.touches[0]; }
+            return {
+                x: (evt.clientX - CTM.e) / CTM.a,
+                y: (evt.clientY - CTM.f) / CTM.d
+            };
+        }
+
+        function startDrag(evt) {
+            if (evt.target.parentNode.classList.contains('draggable')) {
+                selectedElement = evt.target.parentNode;
+                selectedElement.classList.add("grabbed");
+
+                // Make sure the first transform on the element is a translate transform
+                var transforms = selectedElement.transform.baseVal;
+
+                if (transforms.length === 0 || transforms.getItem(0).type !== SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+                    // Create an transform that translates by (0, 0)
+                    var translate = svg.createSVGTransform();
+                    translate.setTranslate(0, 0);
+                    selectedElement.transform.baseVal.insertItemBefore(translate, 0);
+                }
+
+                // Get initial translation
+                transform = transforms.getItem(0);
+
+                minX = boundaryX1;
+                maxX = boundaryX2;
+                minY = boundaryY1;
+                maxY = boundaryY2;
+            }
+        }
+
+        function drag(evt) {
+            if (selectedElement) {
+                evt.preventDefault();
+
+                var coord = getMousePosition(evt);
+                var dx = coord.x;
+                var dy = coord.y;
+
+                if (dx < minX) { dx = minX; }
+                else if (dx > maxX) { dx = maxX; }
+                if (dy < minY) { dy = minY; }
+                else if (dy > maxY) { dy = maxY; }
+
+                transform.setTranslate(dx, dy);
+
+                updateDrag(dx, dy);
+            }
+        }
+
+        function endDrag(evt) {
+            if (selectedElement) {
+                selectedElement.classList.remove("grabbed");
+                var coord = getMousePosition(evt);
+                var dx = coord.x;
+                var dy = coord.y;
+
+                if (dx < minX) { dx = minX; }
+                else if (dx > maxX) { dx = maxX; }
+                if (dy < minY) { dy = minY; }
+                else if (dy > maxY) { dy = maxY; }
+
+                updateDrag(dx, dy, true);
+                selectedElement = false;
+            }
+        }
+    })();
+
+    function updateDrag(xv, yv, snap) {
+        setValueOnAxis($('#colors_x').val(), xv / 2552, snap);
+        setValueOnAxis($('#colors_y').val(), yv / 2552, snap);
     }
 
     function getValueOnAxis(axis) {
@@ -133,6 +226,17 @@
             case 'h': return $("#colors_hue").val() / 359;
             case 's': return $("#colors_saturation").val() / 100;
             case 'l': return $("#colors_lightness").val() / 100;
+        }
+    }
+
+    function setValueOnAxis(axis, value, snap) {
+        switch (axis) {
+            case 'r': $("#colors_red").val((value * 255) | 0); setRgb($("#colors_red").val(), $("#colors_green").val(), $("#colors_blue").val(), false, false, !snap); break;
+            case 'g': $("#colors_green").val((value * 255) | 0); setRgb($("#colors_red").val(), $("#colors_green").val(), $("#colors_blue").val(), false, false, !snap); break;
+            case 'b': $("#colors_blue").val((value * 255) | 0); setRgb($("#colors_red").val(), $("#colors_green").val(), $("#colors_blue").val(), false, false, !snap); break;
+            case 'h': $("#colors_hue").val((value * 359) | 0); setHsl($("#colors_hue").val(), $("#colors_saturation").val(), $("#colors_lightness").val(), false, !snap); break;
+            case 's': $("#colors_saturation").val((value * 100) | 0); setHsl($("#colors_hue").val(), $("#colors_saturation").val(), $("#colors_lightness").val(), false, !snap); break;
+            case 'l': $("#colors_lightness").val((value * 100) | 0); setHsl($("#colors_hue").val(), $("#colors_saturation").val(), $("#colors_lightness").val(), false, !snap); break;
         }
     }
 

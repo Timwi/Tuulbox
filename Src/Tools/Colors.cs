@@ -80,16 +80,14 @@ internal sealed class Colors : ITuul
                         pointer-events: none;
                         transform: translate(-50%, -50%);
                     }
-
+                    svg {
+                        overflow: visible;
+                    }
                     #pointer {
-                        position: absolute;
-                        width: .4cm;
-                        height: .4cm;
-                        border: 2px solid #fff;
-                        border-radius: .2cm;
-                        background: #000;
-                        pointer-events: none;
-                        transform: translate(-50%, -50%);
+                        cursor: grab;
+                    }
+                    #pointer.grabbed {
+                        cursor: grabbing;
                     }
                 ";
 
@@ -297,9 +295,8 @@ internal sealed class Colors : ITuul
                 svg.Append("</g>");
             }
 
-
+        svg.Append("<g id='pointer' class='draggable'><circle cx='0' cy='0' r='25' stroke-width='5'/><circle cx='0' cy='0' r='2.5' stroke-width='5'/></g>");
         svg.Append("</svg>");
-        svg.Append("<div id='pointer'></div>");
         return new RawTag(svg.ToString());
     }
 }
