@@ -1,12 +1,10 @@
-﻿using RT.Json;
-using RT.Servers;
-using RT.Util.ExtensionMethods;
+﻿using RT.Servers;
 
 namespace Tuulbox;
 
 internal sealed class Js : ITuul
 {
-    private static readonly byte[] _js = JsonValue.Fmt(Resources.MainJs).ToUtf8();
+    private static readonly byte[] _js = Resources.MainJs;
 
     object ITuul.Handle(TuulboxModule module, HttpRequest req) => HttpResponse.JavaScript(_js);
 

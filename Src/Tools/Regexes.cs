@@ -13,7 +13,7 @@ internal sealed class RegexesTool : ITuul
     string ITuul.UrlName => "regexes";
     string ITuul.Keywords => "regular expressions regexes regexps regex match text pattern";
     string ITuul.Description => "Explains the meaning of each element in a regular expression.";
-    string ITuul.Js => _js ??= GenerateJs();
+    string ITuul.Js => Resources.RegexesJs;
     string ITuul.Css => @"
 #regex-show { color: black; font-size: 250%; white-space: pre-wrap; word-break: break-all; }
 #regex-show:hover .node { color: #ddd; }
@@ -39,9 +39,6 @@ internal sealed class RegexesTool : ITuul
 
 #regex-explain h3, #regex-explain p { margin: .7em 0; }
 ";
-
-    private static string _js;
-    private static string GenerateJs() => Resources.RegexesJs;
 
     object ITuul.Handle(TuulboxModule module, HttpRequest req)
     {

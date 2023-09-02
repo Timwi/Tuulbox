@@ -5,7 +5,7 @@ namespace Tuulbox;
 
 internal sealed class Css : ITuul
 {
-    private static readonly byte[] _css = Resources.MainCss.ToUtf8();
+    private static readonly byte[] _css = Resources.MainCss;
 
     object ITuul.Handle(TuulboxModule module, HttpRequest req) => HttpResponse.Css(_css);
 
