@@ -1,10 +1,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.33927.289
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11415.280
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tuulbox", "Src\Tuulbox.csproj", "{F675291C-DE5D-428C-81FB-1F84FA13D368}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Generex", "..\Generex\Src\Generex.csproj", "{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,14 +10,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F675291C-DE5D-428C-81FB-1F84FA13D368}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{F675291C-DE5D-428C-81FB-1F84FA13D368}.Debug|Any CPU.Build.0 = Debug|x86
-		{F675291C-DE5D-428C-81FB-1F84FA13D368}.Release|Any CPU.ActiveCfg = Release|x86
-		{F675291C-DE5D-428C-81FB-1F84FA13D368}.Release|Any CPU.Build.0 = Release|x86
-		{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AD37F193-49A3-4A3D-8BF1-122D5457C7A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F675291C-DE5D-428C-81FB-1F84FA13D368}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F675291C-DE5D-428C-81FB-1F84FA13D368}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F675291C-DE5D-428C-81FB-1F84FA13D368}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F675291C-DE5D-428C-81FB-1F84FA13D368}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

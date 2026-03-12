@@ -4,12 +4,11 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using RT.KitchenSink.Geometry;
+using RT.Geometry;
 using RT.Servers;
 using RT.TagSoup;
 using RT.Util;
 using RT.Util.ExtensionMethods;
-using RT.Util.Geometry;
 
 namespace Tuulbox.Tools;
 

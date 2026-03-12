@@ -1,7 +1,7 @@
 ﻿using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
-using ICSharpCode.SharpZipLib.GZip;
 using RT.Json;
 using RT.Servers;
 using RT.TagSoup;
@@ -62,11 +62,8 @@ public sealed class Diff : ITuul
                 byte[] gz;
                 using (var m = new MemoryStream())
                 {
-                    using (var z = new GZipOutputStream(m))
-                    {
-                        z.SetLevel(9);
+                    using (var z = new GZipStream(m, CompressionLevel.Optimal))
                         z.Write(new JsonList { inputOld, inputNew }.ToString().ToUtf8());
-                    }
                     gz = m.ToArray();
                 }
                 return HttpResponse.Redirect(req.Url.WithQuery("d", gz.Base64UrlEncode()));
@@ -78,7 +75,7 @@ public sealed class Diff : ITuul
             {
                 JsonList d = null;
                 using (var m = new MemoryStream(req.Url["d"].Base64UrlDecode()))
-                using (var z = new GZipInputStream(m))
+                using (var z = new GZipStream(m, CompressionMode.Decompress))
                     d = JsonList.Parse(z.ReadAllText());
                 if (d != null && d.Count == 2)
                 {
