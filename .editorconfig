@@ -1,0 +1,19 @@
+﻿[*.cs]
+
+# SYSLIB1045: Convert to 'GeneratedRegexAttribute'.
+dotnet_diagnostic.SYSLIB1045.severity = none
+
+# IDE0057: Let me use .Substring()
+dotnet_diagnostic.IDE0057.severity = none
+
+# CA1859: I know how to use return types
+dotnet_diagnostic.CA1859.severity = none
+
+# IDE0305: Let me use .ToArray()/.ToList()
+dotnet_diagnostic.IDE0305.severity = none
+
+# IDE0028: Let me use new UrlResolver()
+dotnet_diagnostic.IDE0306.severity = none
+
+# IDE0028: Let me use new UrlResolver()
+dotnet_diagnostic.IDE0028.severity = none

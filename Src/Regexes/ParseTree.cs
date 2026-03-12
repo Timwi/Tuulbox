@@ -122,12 +122,12 @@ internal abstract class CharacterClass : IEquatable<CharacterClass>
     public static CharacterClass FromTo(char from, char to) => new CharacterClassRange(from, to);
     public abstract bool Equals(CharacterClass other);
     public abstract override int GetHashCode();
+    public override bool Equals(object obj) => obj is CharacterClass cc && Equals(cc);
 }
 
-internal sealed class CharacterClassEscape : CharacterClass
+internal sealed class CharacterClassEscape(EscapeCode escape) : CharacterClass
 {
-    public EscapeCode Escape;
-    public CharacterClassEscape(EscapeCode escape) => Escape = escape;
+    public EscapeCode Escape = escape;
     public override string ToString() => Escape switch
     {
         EscapeCode.Digit => "a digit character",
@@ -142,20 +142,18 @@ internal sealed class CharacterClassEscape : CharacterClass
     public override int GetHashCode() => Escape.GetHashCode();
 }
 
-internal sealed class CharacterClassCharacter : CharacterClass
+internal sealed class CharacterClassCharacter(char ch) : CharacterClass
 {
-    public char Char { get; private set; }
-    public CharacterClassCharacter(char ch) => Char = ch;
+    public char Char { get; private set; } = ch;
     public override string ToString() => Node.ExplainString(Char.ToString());
     public override bool Equals(CharacterClass other) => (other is CharacterClassCharacter character) && character.Char == Char;
     public override int GetHashCode() => Char.GetHashCode();
 }
 
-internal sealed class CharacterClassRange : CharacterClass
+internal sealed class CharacterClassRange(char from, char to) : CharacterClass
 {
-    public char From { get; private set; }
-    public char To { get; private set; }
-    public CharacterClassRange(char from, char to) { From = from; To = to; }
+    public char From { get; private set; } = from;
+    public char To { get; private set; } = to;
     public override string ToString() => "any character between {0} and {1}".Fmt(
             Node.ExplainString(From.ToString(), concise: true),
             Node.ExplainString(To.ToString(), concise: true)
@@ -187,7 +185,7 @@ internal sealed class AnyNode : Node
 internal abstract class OneChildNode : Node
 {
     public Node Child { get; private set; }
-    public OneChildNode(Node child, string source, int index, int length) 
+    public OneChildNode(Node child, string source, int index, int length)
         : base(source, index, length) => Child = child;
     protected OneChildNode() : base() { }
     protected virtual Tag AddData(Tag tag) => tag;
@@ -214,29 +212,23 @@ internal enum ParenthesisType
     Conditional
 }
 
-internal class ParenthesisNode : OneChildNode
+internal class ParenthesisNode(ParenthesisType type, Node child, string source, int index, int length) : OneChildNode(child, source, index, length)
 {
-    public ParenthesisType Type { get; private set; }
-    public ParenthesisNode(ParenthesisType type, Node child, string source, int index, int length)
-        : base(child, source, index, length) => Type = type;
+    public ParenthesisType Type { get; private set; } = type;
     protected override string CssClass => "parenthesis";
     protected override Tag AddData(Tag tag) => base.AddData(tag).Data("type", Type.ToString());
 }
 
-internal sealed class NamedParenthesisNode : ParenthesisNode
+internal sealed class NamedParenthesisNode(string name, Node child, string source, int index, int length, ParenthesisType? type = null) : ParenthesisNode(type ?? ParenthesisType.NamedCapturing, child, source, index, length)
 {
-    public string GroupName { get; private set; }
-    public NamedParenthesisNode(string name, Node child, string source, int index, int length, ParenthesisType? type = null)
-        : base(type ?? ParenthesisType.NamedCapturing, child, source, index, length) => GroupName = name;
+    public string GroupName { get; private set; } = name;
     protected override Tag AddData(Tag tag) => base.AddData(tag).Data("groupname", GroupName);
 }
 
-internal sealed class BalancingGroupNode : ParenthesisNode
+internal sealed class BalancingGroupNode(string name1, string name2, Node child, string source, int index, int length) : ParenthesisNode(ParenthesisType.BalancingGroup, child, source, index, length)
 {
-    public string Group1Name { get; private set; }
-    public string Group2Name { get; private set; }
-    public BalancingGroupNode(string name1, string name2, Node child, string source, int index, int length)
-        : base(ParenthesisType.BalancingGroup, child, source, index, length) { Group1Name = name1; Group2Name = name2; }
+    public string Group1Name { get; private set; } = name1;
+    public string Group2Name { get; private set; } = name2;
     protected override Tag AddData(Tag tag) => base.AddData(tag)
         .Data("group1name", Group1Name)
         .Data("group2name", Group2Name);
@@ -253,15 +245,13 @@ internal enum OptionFlags
     IgnoreWhitespace = 1 << 4
 }
 
-internal sealed class FlagsParenthesisNode : ParenthesisNode
+internal sealed class FlagsParenthesisNode(OptionFlags enable, OptionFlags disable, Node child, string source, int index, int length) : ParenthesisNode(ParenthesisType.Flags, child, source, index, length)
 {
-    public OptionFlags Enable { get; private set; }
-    public OptionFlags Disable { get; private set; }
-    public FlagsParenthesisNode(OptionFlags enable, OptionFlags disable, Node child, string source, int index, int length)
-        : base(ParenthesisType.Flags, child, source, index, length) { Enable = enable; Disable = disable; }
+    public OptionFlags Enable { get; private set; } = enable;
+    public OptionFlags Disable { get; private set; } = disable;
     protected override Tag AddData(Tag tag) => base.AddData(tag)
-        .Data("enable", (int)Enable)
-        .Data("disable", (int)Disable);
+        .Data("enable", (int) Enable)
+        .Data("disable", (int) Disable);
 }
 
 internal enum RepeaterType
@@ -282,14 +272,12 @@ internal enum Greediness
     Atomic
 }
 
-internal sealed class RepeatOperatorNode : OneChildNode
+internal sealed class RepeatOperatorNode(RepeaterType type, int? min, int? max, Greediness greediness, Node child, string source, int index, int length) : OneChildNode(child, source, index, length)
 {
-    public RepeaterType Type { get; private set; }
-    public int Min { get; private set; }
-    public int? Max { get; private set; }
-    public Greediness Greediness { get; private set; }
-    public RepeatOperatorNode(RepeaterType type, int? min, int? max, Greediness greediness, Node child, string source, int index, int length)
-        : base(child, source, index, length) { Type = type; Min = min ?? 0; Max = max; Greediness = greediness; }
+    public RepeaterType Type { get; private set; } = type;
+    public int Min { get; private set; } = min ?? 0;
+    public int? Max { get; private set; } = max;
+    public Greediness Greediness { get; private set; } = greediness;
     protected override string CssClass => "repeater";
     protected override Tag AddData(Tag tag) => base.AddData(tag)
         .Data("type", Type.ToString())
@@ -315,26 +303,26 @@ internal sealed class EndNode : Node
 internal sealed class OrNode : Node
 {
     public Node[] Children { get; private set; }
-    public OrNode(Node[] children, string source, int index, int length) 
+    public OrNode(Node[] children, string source, int index, int length)
         : base(source, index, length) => Children = children;
     private OrNode() : base() { }
     public override object Html => new SPAN { class_ = "node or" }._(GenerateHtml());
     private IEnumerable<object> GenerateHtml()
     {
-        for (int i = 0; i < Children.Length; i++)
+        for (var i = 0; i < Children.Length; i++)
         {
             var index = i == 0 ? Index : Children[i - 1].EndIndex;
             yield return OriginalSource.Substring(index, Children[i].Index - index);
             yield return Children[i].Html;
         }
-        yield return Source.Substring(Children[Children.Length - 1].EndIndex - Index);
+        yield return Source.Substring(Children[^1].EndIndex - Index);
     }
 }
 
 internal sealed class ThenNode : Node
 {
     public Node[] Children { get; private set; }
-    public ThenNode(Node[] children, string source, int index, int length) 
+    public ThenNode(Node[] children, string source, int index, int length)
         : base(source, index, length) => Children = children;
     private ThenNode() : base() { }
     public override object Html => new SPAN { class_ = "node then" }._(Children.Select(ch => ch.Html));
@@ -358,7 +346,7 @@ internal enum EscapeCode
 internal sealed class EscapeCodeNode : Node
 {
     public EscapeCode Code { get; private set; }
-    public EscapeCodeNode(EscapeCode code, string source, int index, int length) 
+    public EscapeCodeNode(EscapeCode code, string source, int index, int length)
         : base(source, index, length) => Code = code;
     private EscapeCodeNode() : base() { }
     public override object Html => new SPAN { class_ = "node escapecode" }
@@ -369,7 +357,7 @@ internal sealed class EscapeCodeNode : Node
 internal sealed class NamedBackreference : Node
 {
     public string Name { get; private set; }
-    public NamedBackreference(string name, string source, int index, int length) 
+    public NamedBackreference(string name, string source, int index, int length)
         : base(source, index, length) => Name = name;
     private NamedBackreference() { }
     public override object Html => new SPAN { class_ = "node namedbackref" }
@@ -380,7 +368,7 @@ internal sealed class NamedBackreference : Node
 internal sealed class NumberedBackreference : Node
 {
     public long Number { get; private set; }
-    public NumberedBackreference(long number, string source, int index, int length) 
+    public NumberedBackreference(long number, string source, int index, int length)
         : base(source, index, length) => Number = number;
     private NumberedBackreference() { }
     public override object Html => new SPAN { class_ = "node numberedbackref" }

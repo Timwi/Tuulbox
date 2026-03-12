@@ -16,18 +16,10 @@ public sealed class JsonPrettify : PrettifierBase<JsonValue>
     protected override object Textify(JsonValue parsed) => JsonValue.ToStringIndented(parsed);
     protected override object Htmlify(JsonValue parsed) => new JsonHtmlifier(parsed).Html;
 
-    private sealed class JsonHtmlifier
+    private sealed class JsonHtmlifier(JsonValue elem)
     {
-        private readonly JsonValue _elem;
-        private object _cache;
-        private int _counter;
-
-        public JsonHtmlifier(JsonValue elem)
-        {
-            _elem = elem;
-            _counter = 0;
-            _cache = null;
-        }
+        private object _cache = null;
+        private int _counter = 0;
 
         private object Htmlify(JsonValue elem)
         {
@@ -61,7 +53,7 @@ public sealed class JsonPrettify : PrettifierBase<JsonValue>
             );
         }
 
-        public object Html => _cache ??= Htmlify(_elem);
+        public object Html => _cache ??= Htmlify(elem);
     }
 
     protected override string ExtraCss => @"

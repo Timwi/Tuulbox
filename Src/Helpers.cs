@@ -19,14 +19,14 @@ internal static class Helpers
     public static string ElideFront(this string str, int maxChars)
     {
         if (str.Length > maxChars)
-            return "..." + str.Substring(str.Length - (maxChars - 3));
+            return $"...{str.Substring(str.Length - (maxChars - 3))}";
         return str;
     }
 
     public static string ElideBack(this string str, int maxChars)
     {
         if (str.Length > maxChars)
-            return str.Substring(0, maxChars - 3) + "...";
+            return $"{str.Substring(0, maxChars - 3)}...";
         return str;
     }
 }

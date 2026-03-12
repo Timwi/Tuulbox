@@ -15,24 +15,24 @@ internal static class RegexesUtil
     public static Stringerex<Node> Grammar => _grammar ??= Stringerex<Node>.Recursive(generex =>
         {
             var specialCharacters = @"[]^$.*+(){}\|?";
-            var number = new S(ch => ch >= '0' && ch <= '9').RepeatGreedy(1);
+            var number = new S(ch => ch is >= '0' and <= '9').RepeatGreedy(1);
             var matchedNumber = number.Process(m => Convert.ToInt32(m.Match));
-            var hexDigit = new S(ch => (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'));
+            var hexDigit = new S(ch => ch is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F');
 
-            var literal = new S(ch => !specialCharacters.Contains(ch)).RepeatGreedy(1).Process(m => (Node)new LiteralNode(m.Match, m.OriginalSource, m.Index, m.Length));
+            var literal = new S(ch => !specialCharacters.Contains(ch)).RepeatGreedy(1).Process(m => (Node) new LiteralNode(m.Match, m.OriginalSource, m.Index, m.Length));
             var escapeCodeChar = Generex.Ors(
                 new S(ch => ch >= '{' || @"!""#$%&'()*+,-./:;<=>?@[\]^_`".Contains(ch)).Process(m => m.Match[0]),
                 new S('a').Process(m => '\a'),
-                new S('c').ThenExpect(new S(ch => ch >= 'A' && ch <= 'Z').Process(m => ((char)(m.Match[1] - 'A' + 1))), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\c"), " must be followed by a capital letter between A and Z."))),
+                new S('c').ThenExpect(new S(ch => ch is >= 'A' and <= 'Z').Process(m => (char) (m.Match[1] - 'A' + 1)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\c"), " must be followed by a capital letter between A and Z."))),
                 new S('e').Process(m => '\x1B'),
                 new S('f').Process(m => '\f'),
                 new S('n').Process(m => '\n'),
                 new S('r').Process(m => '\r'),
                 new S('t').Process(m => '\t'),
                 new S('v').Process(m => '\v'),
-                new S('x').ThenExpect(hexDigit.Times(2).Process(m => (char)Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\x"), " must be followed by two hexadecimal digits."))),
-                new S('u').ThenExpect(hexDigit.Times(4).Process(m => (char)Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))),
-                new S('0').ThenExpect(new S(ch => ch >= '0' && ch <= '7').RepeatGreedy(1, 3), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\0"), " must be followed by octal digits (at least one, at most three)."))).Process(m => (char)Convert.ToInt32(m.Match, 8)));
+                new S('x').ThenExpect(hexDigit.Times(2).Process(m => (char) Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\x"), " must be followed by two hexadecimal digits."))),
+                new S('u').ThenExpect(hexDigit.Times(4).Process(m => (char) Convert.ToInt32(m.Match, 16)), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\u"), " must be followed by four hexadecimal digits."))),
+                new S('0').ThenExpect(new S(ch => ch is >= '0' and <= '7').RepeatGreedy(1, 3), m => new ParseException(m.Index - 1, m.Index + 1, new P(new CODE(@"\0"), " must be followed by octal digits (at least one, at most three)."))).Process(m => (char) Convert.ToInt32(m.Match, 8)));
 
             var escapeCodeGroup = Generex.Ors(
                 new S('d').Process(m => EscapeCode.Digit),
@@ -57,15 +57,15 @@ internal static class RegexesUtil
                     new S('Q')
                         .ThenExpect(S.Anything.Process(m => m.Match).Then(@"\E").Atomic(), m => new ParseException(m.Index - 1, m.Index + 1, new P("The ", new CODE(@"\Q"), " escape code introduces a literal that must be terminated with ", new CODE(@"\E"), ".")))
                         .Process(m => new Func<int, int, Node>((index, length) => new LiteralNode(m.Result, m.OriginalSource, index, length, isQE: true))),
-                    new S(ch => ch >= '1' && ch <= '9').Then(new S(ch => ch >= '0' && ch <= '9').RepeatGreedy()).Process(m => new Func<int, int, Node>((index, length) => new NumberedBackreference(Convert.ToInt64(m.OriginalSource.Substring(index + 1, length - 1)), m.OriginalSource, index, length))),
+                    new S(ch => ch is >= '1' and <= '9').Then(new S(ch => ch is >= '0' and <= '9').RepeatGreedy()).Process(m => new Func<int, int, Node>((index, length) => new NumberedBackreference(Convert.ToInt64(m.OriginalSource.Substring(index + 1, length - 1)), m.OriginalSource, index, length))),
                     new S('k')
                         .ThenExpect(new S('<').Then(
-                            Stringerexes.IdentifierNoPunctuation.Process(m => (object)m.Match).Or(
+                            Stringerexes.IdentifierNoPunctuation.Process(m => (object) m.Match).Or(
                             Stringerexes.PositiveInteger.Cast<object>())
                         ).Then('>'), m => new ParseException(m.Index - 1, m.Index + 1, new P("The correct syntax for this escape code is ", new CODE(@"\k<name>"), ". The name must consist of letters and digits and start with a letter (e.g. ", new CODE(@"\k<url2>"), "), in which case it refers to a named capture (in this case, ", new CODE(@"(?<url2>...)"), ") or be entirely numerical (e.g. ", new CODE(@"\k<12>"), "), in which case it refers to an unnamed capture (in this case, the 12th).")))
                         .Process(m => new Func<int, int, Node>((index, length) =>
                             m.Result is long brNumber ? new NumberedBackreference(brNumber, m.OriginalSource, index, length) :
-                            m.Result is string brName ? new NamedBackreference(brName, m.OriginalSource, index, length) : (Node)null))
+                            m.Result is string brName ? new NamedBackreference(brName, m.OriginalSource, index, length) : (Node) null))
                 ),
                 m => new ParseException(m.Index, m.Index + m.Length, new P("Unrecognized escape code. I know about: ", "acefnrtvxudDsSwWAbBzZQk".Order().Select(ch => new CODE("\\", ch)).InsertBetweenWithAnd<object>(", ", " and "), ". There is also ", new CODE(@"\0"), " through ", new CODE(@"\777"), " (octal) and all the punctuation characters, e.g. ", new CODE(@"\{"), "."))
             ).Process(m => m.Result(m.Index, m.Length));
@@ -107,11 +107,11 @@ internal static class RegexesUtil
                 (negated, charClasses) => new { Negated = negated, CharacterClass = charClasses.ToArray() })
                 .ThenExpect(']', m => new ParseException(m.Index, m.Index + m.Length, new P("You need to terminate this character class with a ", new CODE("]"), ".")))
                 .Atomic()
-                .Process(m => (Node)new CharacterClassNode(m.Result.CharacterClass, m.Result.Negated, m.OriginalSource, m.Index, m.Length));
+                .Process(m => (Node) new CharacterClassNode(m.Result.CharacterClass, m.Result.Negated, m.OriginalSource, m.Index, m.Length));
 
-            var start = new S('^').Process(m => (Node)new StartNode(m.OriginalSource, m.Index, m.Length));
-            var end = new S('$').Process(m => (Node)new EndNode(m.OriginalSource, m.Index, m.Length));
-            var any = new S('.').Process(m => (Node)new AnyNode(m.OriginalSource, m.Index, m.Length));
+            var start = new S('^').Process(m => (Node) new StartNode(m.OriginalSource, m.Index, m.Length));
+            var end = new S('$').Process(m => (Node) new EndNode(m.OriginalSource, m.Index, m.Length));
+            var any = new S('.').Process(m => (Node) new AnyNode(m.OriginalSource, m.Index, m.Length));
 
             var optionFlags = Generex.Ors(
                 new S('i').Process(m => OptionFlags.IgnoreCase),
@@ -188,18 +188,18 @@ internal static class RegexesUtil
                 .Process(m => m.Result(m.Index, m.Length));
 
             var repeater = Generex.Ors(
-                new S("*?").Process(m => new { Min = 0, Max = (int?)null, Greediness = Greediness.Nongreedy, Type = RepeaterType.Star }),
-                new S("*+").Process(m => new { Min = 0, Max = (int?)null, Greediness = Greediness.Atomic, Type = RepeaterType.Star }),
-                new S('*').Process(m => new { Min = 0, Max = (int?)null, Greediness = Greediness.Greedy, Type = RepeaterType.Star }),
-                new S("+?").Process(m => new { Min = 1, Max = (int?)null, Greediness = Greediness.Nongreedy, Type = RepeaterType.Plus }),
-                new S("++").Process(m => new { Min = 1, Max = (int?)null, Greediness = Greediness.Atomic, Type = RepeaterType.Plus }),
-                new S('+').Process(m => new { Min = 1, Max = (int?)null, Greediness = Greediness.Greedy, Type = RepeaterType.Plus }),
-                new S("??").Process(m => new { Min = 0, Max = (int?)1, Greediness = Greediness.Nongreedy, Type = RepeaterType.Optional }),
-                new S('?').Process(m => new { Min = 0, Max = (int?)1, Greediness = Greediness.Greedy, Type = RepeaterType.Optional }),
+                new S("*?").Process(m => new { Min = 0, Max = (int?) null, Greediness = Greediness.Nongreedy, Type = RepeaterType.Star }),
+                new S("*+").Process(m => new { Min = 0, Max = (int?) null, Greediness = Greediness.Atomic, Type = RepeaterType.Star }),
+                new S('*').Process(m => new { Min = 0, Max = (int?) null, Greediness = Greediness.Greedy, Type = RepeaterType.Star }),
+                new S("+?").Process(m => new { Min = 1, Max = (int?) null, Greediness = Greediness.Nongreedy, Type = RepeaterType.Plus }),
+                new S("++").Process(m => new { Min = 1, Max = (int?) null, Greediness = Greediness.Atomic, Type = RepeaterType.Plus }),
+                new S('+').Process(m => new { Min = 1, Max = (int?) null, Greediness = Greediness.Greedy, Type = RepeaterType.Plus }),
+                new S("??").Process(m => new { Min = 0, Max = (int?) 1, Greediness = Greediness.Nongreedy, Type = RepeaterType.Optional }),
+                new S('?').Process(m => new { Min = 0, Max = (int?) 1, Greediness = Greediness.Greedy, Type = RepeaterType.Optional }),
                 new S('{').ThenExpect(
                     matchedNumber.Then(',').ThenRaw(matchedNumber.OptionalGreedy().ProcessRaw(m => m.Cast<int?>().FirstOrDefault()), (min, max) => new { Min = min, Max = max, Type = max == null ? RepeaterType.Min : RepeaterType.MinMax })
-                        .Or(new S(',').Then(matchedNumber).ProcessRaw(max => new { Min = 0, Max = (int?)max, Type = RepeaterType.Max }))
-                        .Or(matchedNumber.ProcessRaw(m => new { Min = m, Max = (int?)m, Type = RepeaterType.Specific }))
+                        .Or(new S(',').Then(matchedNumber).ProcessRaw(max => new { Min = 0, Max = (int?) max, Type = RepeaterType.Max }))
+                        .Or(matchedNumber.ProcessRaw(m => new { Min = m, Max = (int?) m, Type = RepeaterType.Specific }))
                         .Atomic(),
                     m => new ParseException(m.Index, m.Index + m.Length, Ut.NewArray<object>(
                         new P("The correct syntax for this repeater is one of the following:"),

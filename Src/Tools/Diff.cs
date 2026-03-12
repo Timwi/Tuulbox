@@ -104,8 +104,8 @@ public sealed class Diff : ITuul
                     @new: Regex.Split(nw.JoinString(), @"\b"),
                     predicate: _interestingWord.IsMatch,
                     postProcessor: (ol2, nw2) => Ut.Diff(
-                        old: ol2.SelectMany(o => Regex.IsMatch(o, @"^\w") ? new[] { o } : o.Split(1)),
-                        @new: nw2.SelectMany(n => Regex.IsMatch(n, @"^\w") ? new[] { n } : n.Split(1)),
+                        old: ol2.SelectMany(o => Regex.IsMatch(o, @"^\w") ? [o] : o.Split(1)),
+                        @new: nw2.SelectMany(n => Regex.IsMatch(n, @"^\w") ? [n] : n.Split(1)),
                         predicate: str => !string.IsNullOrWhiteSpace(str)
                     )
                 )

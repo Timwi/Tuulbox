@@ -20,20 +20,13 @@ public sealed class XmlPrettify : PrettifierBase<XElement>
     protected override object Htmlify(XElement parsed) => new XmlHtmlifier(parsed).Html;
     protected override object Textify(XElement parsed) => new Func<object>(parsed.ToString);
 
-    private sealed class XmlHtmlifier
+    private sealed class XmlHtmlifier(XElement elem)
     {
-        private readonly XElement _elem;
-        private object _cache;
-        private int _counter;
+        private readonly XElement _elem = elem;
+        private object _cache = null;
+        private int _counter = 0;
 
-        public XmlHtmlifier(XElement elem)
-        {
-            _elem = elem;
-            _counter = 0;
-            _cache = null;
-        }
-
-        private object stringifyXName(XName name) => name.LocalName;
+        private static object stringifyXName(XName name) => name.LocalName;
 
         private IEnumerable<object> htmlify(XElement elem)
         {
