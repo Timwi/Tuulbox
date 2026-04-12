@@ -1,4 +1,4 @@
-﻿namespace Tuulbox;
+namespace Tuulbox;
 
 public sealed class TuulboxSettings
 {
@@ -6,7 +6,7 @@ public sealed class TuulboxSettings
     public bool UseDomain = false;
 
     /// <summary>
-    ///     Depending on the value of <see cref="UseDomain"/>, either the base domain (e.g. <c>tuulbox.com</c>) or the
-    ///     base path (e.g. <c>/tuulbox</c>, or the empty string).</summary>
+    ///     Depending on the value of <see cref="UseDomain"/>, either the base domain (e.g. <c>tuulbox.com</c>) or the base
+    ///     path (e.g. <c>/tuulbox</c>, or the empty string).</summary>
     public string BaseDomainOrPath = "";
 }

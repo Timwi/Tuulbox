@@ -57,7 +57,7 @@ public sealed class Diff : ITuul
         {
             inputOld = req.Post["old"].Value;
             inputNew = req.Post["new"].Value;
-            if (inputOld.Length + inputNew.Length < 2048)
+            if (inputOld != null && inputNew != null && inputOld.Length + inputNew.Length < 2048)
             {
                 byte[] gz;
                 using (var m = new MemoryStream())

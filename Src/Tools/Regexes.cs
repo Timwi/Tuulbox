@@ -47,7 +47,7 @@ internal sealed class RegexesTool : ITuul
 
         if (req.Method == HttpMethod.Post)
         {
-            regex = req.Post["regex"].Value.Replace("\r", "");
+            regex = req.Post["regex"].Value?.Replace("\r", "");
             if (regex != null)
             {
                 try
