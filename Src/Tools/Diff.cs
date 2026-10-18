@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -18,34 +19,52 @@ public sealed class Diff : ITuul
     string ITuul.UrlName => "diff";
     string ITuul.Keywords => "diff difftool difference textdiff worddiff code changes";
     string ITuul.Description => "Visualizes the differences between two provided chunks of text (e.g. source code).";
-    string ITuul.Js => @"
-                    $(function()
-                    {
-                        $('#diff-font-monospace').click(function()
-                        {
-                            $('.diff-pre').css('font-family', 'monospace');
-                            return false;
-                        });
-                        $('#diff-font-proportional').click(function()
-                        {
-                            $('.diff-pre').css('font-family', 'inherit');
-                            return false;
-                        });
-                        $('#diff-wordwrap').click(function()
-                        {
-                            $('.diff-pre').css('white-space', this.checked ? 'pre-wrap' : 'pre');
-                        });
-                    });
-                ";
-    string ITuul.Css => @"
-                    .diff-Ins { background: #8f8; font-weight: bold; }
-                    .diff-Del { background: #f88; font-style: italic; }
-                    .diff-tab-control { position: relative; }
-                    .diff-pre { display: inline-block; min-width: 100%; }
-                ";
+    string ITuul.Js => """
+        $(function()
+        {
+            $('#diff-font-monospace').click(function()
+            {
+                $('.diff-pre').css('font-family', 'monospace');
+                return false;
+            });
+            $('#diff-font-proportional').click(function()
+            {
+                $('.diff-pre').css('font-family', 'inherit');
+                return false;
+            });
+            $('#diff-wordwrap').click(function()
+            {
+                $('.diff-pre').css('white-space', this.checked ? 'pre-wrap' : 'pre');
+            });
+            $('#diff-newlines').click(function()
+            {
+                $('.diff-newline').css('display', this.checked ? 'inline' : 'none');
+            });
+        });
+        """;
+    string ITuul.Css => """
+        .diff-Ins { background: #8f8; font-weight: bold; }
+        .diff-Del { background: #f88; font-style: italic; }
+        .diff-tab-control { position: relative; }
+        .diff-pre { display: inline-block; min-width: 100%; }
+        .diff-tab-control .diff-newline-option { display: none; }
+        .diff-tab-control[data-sel="diff-tab-word"] .diff-newline-option { display: inline; }
+        """;
 
     private static readonly Regex _interestingLine = new(@"\S\s*\S", RegexOptions.Singleline | RegexOptions.Compiled);
     private static readonly Regex _interestingWord = new(@"^\w", RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static IEnumerable<object> insertNewlines(string input)
+    {
+        while (input.IndexOf('\n') is { } p and not -1)
+        {
+            yield return input.Substring(0, p);
+            yield return new SPAN { class_ = "diff-newline" }._("⏎");
+            yield return "\n";
+            input = input.Substring(p + 1);
+        }
+        yield return input;
+    }
 
     object ITuul.Handle(TuulboxModule module, HttpRequest req)
     {
@@ -121,7 +140,11 @@ public sealed class Diff : ITuul
                         new A { href = "#", id = "diff-font-proportional", accesskey = "p" }._(Helpers.TextWithAccessKey("proportional", "p"))
                     ),
                     new DIV(
-                        new INPUT { type = itype.checkbox, id = "diff-wordwrap" }, " ", Helpers.LabelWithAccessKey("allow word-wrapping", "r", "diff-wordwrap")
+                        new INPUT { type = itype.checkbox, id = "diff-wordwrap" }, " ", Helpers.LabelWithAccessKey("allow word-wrapping", "r", "diff-wordwrap"),
+                        new SPAN { class_ = "diff-newline-option" }._(
+                            " | ",
+                            new INPUT { type = itype.checkbox, id = "diff-newlines", checked_ = true }, " ", Helpers.LabelWithAccessKey("show ⏎", "h", "diff-newlines")
+                        )
                     )
                 ),
                 new DIV { class_ = "tabs" }._(
@@ -132,7 +155,9 @@ public sealed class Diff : ITuul
                     new PRE { class_ = "diff-pre" }._(lineDiff.Select(line => new DIV { class_ = "diff-" + line.op }._(line.item.Length == 0 ? "\n" : line.item)))
                 ),
                 new DIV { class_ = "tab", id = "diff-tab-word" }._(
-                    new PRE { class_ = "diff-pre" }._(wordDiff.GroupConsecutiveBy(tup => tup.op).Select(group => new SPAN { class_ = "diff-" + group.Key }._(group.Select(tup => tup.item))))
+                    new PRE { class_ = "diff-pre" }._(wordDiff.GroupConsecutiveBy(tup => tup.op).Select(group => new SPAN { class_ = "diff-" + group.Key }._(
+                        group.Select(tup => insertNewlines(tup.item))
+                    )))
                 )
             );
         }
